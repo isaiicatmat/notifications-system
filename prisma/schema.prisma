@@ -1,0 +1,70 @@
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/infrastructure/prisma/generated"
+  moduleFormat = "cjs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum NotificationStatus {
+  pending
+  processing
+  sent
+  failed
+
+  @@map("notification_status")
+}
+
+model User {
+  id           String   @id @default(uuid()) @db.Uuid
+  email        String   @unique
+  passwordHash String   @map("password_hash")
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  notifications Notification[]
+
+  @@map("users")
+}
+
+model Notification {
+  id            String             @id @default(uuid()) @db.Uuid
+  userId        String             @map("user_id") @db.Uuid
+  title         String
+  content       String
+  // Plain string (not an enum) so a new channel needs no migration.
+  channel       String
+  recipient     String
+  status        NotificationStatus @default(pending)
+  attempts      Int                @default(0)
+  nextAttemptAt DateTime           @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
+  lockedAt      DateTime?          @map("locked_at") @db.Timestamptz(3)
+  createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attemptsLog DeliveryAttempt[]
+
+  // List a user's notifications, newest first.
+  @@index([userId, createdAt(sort: Desc)])
+  // Worker polling: pending work that is due.
+  @@index([status, nextAttemptAt])
+  @@map("notifications")
+}
+
+model DeliveryAttempt {
+  id             String   @id @default(uuid()) @db.Uuid
+  notificationId String   @map("notification_id") @db.Uuid
+  channel        String
+  // sent | retryable | permanent
+  outcome        String
+  reason         String?
+  details        Json     @default("{}")
+  attemptedAt    DateTime @default(now()) @map("attempted_at") @db.Timestamptz(3)
+
+  notification Notification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+
+  @@index([notificationId, attemptedAt])
+  @@map("delivery_attempts")
+}
