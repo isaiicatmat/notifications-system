@@ -1,4 +1,4 @@
-import { fastify, FastifyError, type FastifyInstance } from "fastify";
+import { FastifyError, FastifyInstance } from "fastify";
 import { 
     ConflictError, 
     DomainError, 
