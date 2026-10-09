@@ -21,7 +21,7 @@ export interface TokenService {
 }
 
 export interface UserRepository {
-    create(data: { email: string; psswordHash: string }): Promise<User>;
+    create(data: { email: string; passwordHash: string }): Promise<User>;
     findByEmail(email: string): Promise<User | null>;
 }
 
