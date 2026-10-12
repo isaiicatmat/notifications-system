@@ -10,7 +10,7 @@ import { NotificationService } from "../application/notification-service";
 import type { Clock } from "../domain/ports";
 import { PrismaNotificationRepository } from "../infrastructure/prisma/prisma-notification-repository";
 import { systemClock } from "../shared/system-clock";
-
+import { createDefaultChannelRegistry } from "../infrastructure/channels";
 export interface ContainerOptions {
     logger?: boolean,
     channels?: ChannelRegistry,
@@ -28,7 +28,7 @@ export interface ContainerOptions {
 /** Composition root: only place where concrete implementations are wired to ports */
 export function createContainer(config: AppConfig, options: ContainerOptions = {}): Container {
     const clock = options.clock ?? systemClock;
-    const channels = options.channels ?? new ChannelRegistry();
+    const channels = options.channels ?? createDefaultChannelRegistry(clock);
     const prisma = createPrismaClient(config.databaseUrl);
     const tokens = new JwtTokenService(config.jwtSecret, config.jwtExpiresIn);
     const authService = new AuthService(
