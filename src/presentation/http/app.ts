@@ -5,7 +5,14 @@ import { createAuthenticationHook } from "./auth-hooks";
 import { registerAuthRoutes } from "./auth-routes";
 import { registerErrorHandler } from "./error-handler";
 import { ErrorResponse } from "./schemas";
+import type { NotificationService } from "../../application/notification-service";
+import { registerNotificationRoutes } from "./notification-routes";
 
+export interface AppDependencies {
+    authService: AuthService,
+    notificationService: NotificationService,
+    logger?: boolean
+}
 export interface AppDependencies {
     authService: AuthService,
     logger?: boolean
@@ -35,8 +42,7 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     //Protected routes: everything inside here needs a valid token
     await app.register(async (protectedScope) => {
         protectedScope.addHook('onRequest', createAuthenticationHook(deps.authService));
-        //Temporary route to test hook, will be replaced later
-        protectedScope.get('/me', async (request) => ({ id: request.userId }));
+        registerNotificationRoutes(protectedScope, deps.notificationService);
     });
 
     return app;
