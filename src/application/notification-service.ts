@@ -7,7 +7,7 @@ export type CreateNotificationInput = Omit<NewNotification, 'userId' | 'nextAtte
 
 export class NotificationService {
     constructor(
-        private readonly notificatioins: NotificationRepository,
+        private readonly notifications: NotificationRepository,
         private readonly channels: ChannelRegistry,
         private readonly clock: Clock
     ) {}
@@ -19,11 +19,11 @@ export class NotificationService {
         }
 
         this.assertSupportChannel(data.channel);
-        return this.notificatioins.create( { userId, ...data, nextAttemptAt: this.clock.now()} );
+        return this.notifications.create( { userId, ...data, nextAttemptAt: this.clock.now()} );
     }
 
     list(userId: string): Promise<Notification[]> {
-        return this.notificatioins.listByUser(userId);
+        return this.notifications.listByUser(userId);
     }
 
     async update(userId: string, id: string, patch: NotificationPatch): Promise<Notification> {
@@ -35,7 +35,7 @@ export class NotificationService {
 
         if (data.channel !== undefined) this.assertSupportChannel(data.channel);
 
-        const result = await this.notificatioins.updateOwned(id, userId, data, this.clock.now());
+        const result = await this.notifications.updateOwned(id, userId, data, this.clock.now());
         if (result.kind === 'not_found') throw new NotFoundError('Notification not found');
         if (result.kind === 'not_editable') {
             throw new ConflictError('Notification can no longer be modified');
@@ -45,7 +45,7 @@ export class NotificationService {
     }
 
     async remove(userId: string, id: string): Promise<void> {
-        const deleted = await this.notificatioins.deleteOwned(id, userId);
+        const deleted = await this.notifications.deleteOwned(id, userId);
         if (!deleted) throw new NotFoundError('Notification not found');
     }
 
