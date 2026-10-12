@@ -106,9 +106,9 @@ export function registerNotificationRoutes(
                 },
             },
         },
-        async (request) => {
+        async (request) =>
             toNotificationDto(await notifications.update(request.userId, request.params.id, request.body))
-        }
+        
     );
 
     app.delete<{ Params: Static<typeof IdParams> }> (
@@ -129,7 +129,7 @@ export function registerNotificationRoutes(
         },
         async (request, reply) => {
             await notifications.remove(request.userId, request.params.id);
-            return reply.status(200).send();
+            return reply.status(204).send();
         }
     );
 }
