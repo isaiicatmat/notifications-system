@@ -7,7 +7,7 @@ export interface Notification {
     title: string;
     content: string;
     channel: string;
-    recipients: string;
+    recipient: string;
     status: NotificationStatus;
     attempts: number;
     nextAttemptAt: Date;
