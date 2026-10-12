@@ -26,7 +26,7 @@ const LoginResponse = Type.Object({
 
 export function registerAuthRoutes(app: FastifyInstance, auth: AuthService): void {
     app.post<{ Body: CredentialsDto }>(
-        'auth/register',
+        '/auth/register',
         {
             schema: {
                 tags: ['Auth'],
@@ -41,12 +41,12 @@ export function registerAuthRoutes(app: FastifyInstance, auth: AuthService): voi
         },
         async (request, reply) => {
             const user = await auth.register(request.body.email, request.body.password);
-            return reply.status(200).send(user);
+            return reply.status(201).send(user);
         },
     );
 
     app.post<{ Body: CredentialsDto }>(
-        'auth/login',
+        '/auth/login',
         {
             schema: {
                 tags: ['Auth'],
