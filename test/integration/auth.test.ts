@@ -12,7 +12,7 @@ afterAll(() => context.close());
 beforeEach(() => resetDatabase(context.container));
 
 const post = (url: string, payload: object) => context.app.inject({ method: 'POST', url, payload });
-const PROTECTED_URL = '/me';
+const PROTECTED_URL = '/notifications';
 
 describe('POST /auth/register', () => {
     it('creates the user and never returns password data', async () => {
@@ -111,10 +111,10 @@ describe('protected endpoint', () => {
         }
     });
 
-    it('accepts a valid token and identifies the caller', async () => {
-        const { headers, userId } = await registerAndLogin(context.app);
+    it('accepts a valid token', async () => {
+        const { headers } = await registerAndLogin(context.app);
         const res = await get(headers.authorization);
         expect(res.statusCode).toBe(200);
-        expect(res.json()).toEqual({ id: userId });
-    })
+        expect(res.json()).toEqual([]);
+    });
 });

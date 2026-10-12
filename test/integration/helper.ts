@@ -3,6 +3,9 @@ import { createContainer, type Container } from "../../src/main/container";
 import { buildApp } from "../../src/presentation/http/app";
 import { loadConfig } from "../../src/shared/config";
 import { TEST_DATABASE_URL, TEST_JWT_SECRET } from "./test-env";
+import { ChannelRegistry } from "../../src/application/channel-registry";
+import { Channel } from "../../src/domain/channel";
+import { Clock } from "../../src/domain/ports";
 
 export interface TestContext {
     app: FastifyInstance;
@@ -21,10 +24,17 @@ export function testConfig(overrides: Record<string, string> = {}) {
 
 export interface TestContextOptions {
     env?: Record<string, string>;
+    channels?: ChannelRegistry;
+    clock?: Clock
 }
 
 export async function createTestContext(options: TestContextOptions = {}): Promise<TestContext> {
-    const container = createContainer(testConfig(options.env));
+    const container = createContainer(testConfig(options.env), {
+        channels: options.channels ?? stubChannels('email', 'sms', 'push'),
+        clock: options.clock,
+    });
+    
+
     const app = await buildApp(container.app);
     await app.ready();
     return {
@@ -53,3 +63,14 @@ export async function registerAndLogin(
     const token = login.json().accessToken as string;
     return { token, userId: reg.json().id as string, headers: { authorization: `Bearer ${token}` }}
 }
+
+export function stubChannels(...names: string[]): ChannelRegistry {
+    const registry = new ChannelRegistry();
+    for (const name of names) {
+        const channel: Channel = { name, send: async () => ({ outcome: 'sent', details: {} }) };
+        registry.register(channel);
+    }
+
+    return registry;
+}
+
