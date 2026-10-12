@@ -1,8 +1,8 @@
 import { UnauthorizedError, ValidationError } from "../domain/errors";
 import type { PasswordHasher, TokenService, UserRepository } from "../domain/ports";
+import { isValidEmail } from "../domain/email";
 
 export const MIN_PASSWORD_LENGTH = 8;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export interface RegisteredUser {
     id: string,
@@ -28,7 +28,7 @@ export class AuthService {
 
     async register(email: string, password: string): Promise<RegisteredUser> {
         const normalized = normalizeEmail(email);
-        if (!EMAIL_PATTERN.test(normalized)) throw new ValidationError('Email format is invalid');
+        if (!isValidEmail(normalized)) throw new ValidationError('Email format is invalid');
         if (password.length < MIN_PASSWORD_LENGTH) {
             throw new ValidationError(`Password must have at least ${MIN_PASSWORD_LENGTH} characters`);
         }
