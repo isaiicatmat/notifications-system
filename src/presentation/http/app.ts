@@ -7,10 +7,12 @@ import { registerErrorHandler } from "./error-handler";
 import { ErrorResponse } from "./schemas";
 import type { NotificationService } from "../../application/notification-service";
 import { registerNotificationRoutes } from "./notification-routes";
+import type { DeliveryHistoryService } from "../../application/delivery-history-service";
 
 export interface AppDependencies {
     authService: AuthService,
     notificationService: NotificationService,
+    deliveryHistoryService: DeliveryHistoryService,
     logger?: boolean
 }
 export interface AppDependencies {
@@ -42,7 +44,11 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     //Protected routes: everything inside here needs a valid token
     await app.register(async (protectedScope) => {
         protectedScope.addHook('onRequest', createAuthenticationHook(deps.authService));
-        registerNotificationRoutes(protectedScope, deps.notificationService);
+        registerNotificationRoutes(
+            protectedScope, 
+            deps.notificationService,
+            deps.deliveryHistoryService
+        );
     });
 
     return app;

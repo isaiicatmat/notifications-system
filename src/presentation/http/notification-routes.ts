@@ -3,6 +3,7 @@ import type { FastifyInstance } from "fastify";
 import type { NotificationService } from "../../application/notification-service";
 import { NOTIFICATION_STATUSES, type Notification } from "../../domain/notification";
 import { errorResponses } from "./schemas";
+import type { DeliveryHistoryService } from "../../application/delivery-history-service";
 
 const Title = Type.String({ minLength: 1, maxLength: 200, examples: ["Welcome!"] });
 const Content = Type.String({ minLength: 1, maxLength: 5000, examples: ['Thanks for signing up.'] });
@@ -33,6 +34,17 @@ const NotificationResponse = Type.Object({
     updatedAt: Type.String({ format: 'date-time' }),
 });
 
+const DeliveryAttemptResponse = Type.Object({
+    id: Type.String({ format: 'uuid' }),
+    channel: Type.String(),
+    outcome: Type.Union([Type.Literal('sent'), Type.Literal('retryable'), Type.Literal('permanent')]),
+    reason: Type.Union([Type.String(), Type.Null()]),
+    details: Type.Record(Type.String(), Type.Unknown(), {
+        description: 'Channel-specific data (rendered template, payload, number and date, ...)',
+    }),
+    attemptedAt: Type.String({ format: 'date-time' })
+});
+
 /** Maps a domain entity to the public response DTO */
 export function toNotificationDto(notification: Notification): Static<typeof NotificationResponse> {
     return {
@@ -52,7 +64,8 @@ const security = [{ bearerAuth: [] }];
 
 export function registerNotificationRoutes(
     app: FastifyInstance,
-    notifications: NotificationService
+    notifications: NotificationService,
+    history: DeliveryHistoryService
 ): void {
     app.post<{ Body: Static<typeof CreateNotificationBody> }>(
         '/notifications',
@@ -130,6 +143,35 @@ export function registerNotificationRoutes(
         async (request, reply) => {
             await notifications.remove(request.userId, request.params.id);
             return reply.status(204).send();
+        }
+    );
+
+    app.get<{ Params: Static<typeof IdParams> }> (
+        '/notifications/:id/deliveries',
+        {
+            schema: {
+                tags: ['Notifications'],
+                summary: 'Delivery attemtps of a notification (oldest first)',
+                security,
+                params: IdParams,
+                response: {
+                    200: Type.Array(DeliveryAttemptResponse),
+                    400: errorResponses[400],
+                    401: errorResponses[401],
+                    404: errorResponses[404]
+                }
+            }
+        },
+        async (request) => {
+            const attempts = await history.list(request.userId, request.params.id);
+            return attempts.map((attempt) => ({
+                id: attempt.id,
+                channel: attempt.channel,
+                outcome: attempt.outcome,
+                reason: attempt.reason,
+                details: attempt.details,
+                attemptedAt: attempt.attemptedAt.toISOString()
+            }));
         }
     );
 }
