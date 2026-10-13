@@ -33,7 +33,7 @@ export async function createTestContext(options: TestContextOptions = {}): Promi
         channels: options.channels ?? stubChannels('email', 'sms', 'push'),
         clock: options.clock,
     });
-    
+
 
     const app = await buildApp(container.app);
     await app.ready();
@@ -72,5 +72,34 @@ export function stubChannels(...names: string[]): ChannelRegistry {
     }
 
     return registry;
+}
+
+export async function seedNotifications(
+    container: Container,
+    pendingNotifications: number,
+    overrides: Partial<{ channel: string, recipient: string, nextAttemptAt: Date }> = {},
+): Promise<{ userId: string, ids: string[] }> {
+    const user = await container.prisma.user.upsert({
+        where: { email: 'seed@test.com' },
+        update: {},
+        create: {email: 'seed@test.com', passwordHash: 'x' }
+    });
+    
+    const ids: string[] = [];
+
+    for (let i = 0; i < pendingNotifications; i++) {
+        const notification = await container.prisma.notification.create({
+            data: {
+                userId: user.id,
+                title: `title ${i}`,
+                content: `content ${i}`,
+                channel: overrides.channel ?? 'email',
+                recipient: overrides.recipient ?? 'seed@test.com',
+                ...(overrides.nextAttemptAt ? { nextAttemptAt: overrides.nextAttemptAt } : {}) 
+            }
+        });
+        ids.push(notification.id);
+    }
+    return { userId: user.id, ids };
 }
 
