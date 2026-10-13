@@ -103,3 +103,15 @@ export async function seedNotifications(
     return { userId: user.id, ids };
 }
 
+export class MutableClock implements Clock {
+    constructor(private current = new Date()) {}
+
+    now(): Date {
+        return new Date(this.current);
+    }
+
+    advance(ms: number): void {
+        this.current = new Date(this.current.getTime() + ms);
+    }
+}
+
