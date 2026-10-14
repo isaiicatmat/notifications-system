@@ -47,7 +47,7 @@ describe('GET /notifications/:id/deliveries', () => {
 
         const res = await context.app.inject({
             method: 'GET',
-            url: `/notificatios/${id}/deliveries`,
+            url: `/notifications/${id}/deliveries`,
             headers: carlos.headers
         });
 
