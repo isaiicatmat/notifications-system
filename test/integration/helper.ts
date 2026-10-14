@@ -6,6 +6,11 @@ import { TEST_DATABASE_URL, TEST_JWT_SECRET } from "./test-env";
 import { ChannelRegistry } from "../../src/application/channel-registry";
 import { Channel } from "../../src/domain/channel";
 import { Clock } from "../../src/domain/ports";
+import { NotificationStatus } from "../../src/domain/notification";
+import { expect } from "vitest";
+
+const WAIT_TIMEOUT_MS = 5_000;
+const WAIT_INTERVAL_MS = 50;
 
 export interface TestContext {
     app: FastifyInstance;
@@ -45,6 +50,25 @@ export async function createTestContext(options: TestContextOptions = {}): Promi
             await container.close()
         },
     };
+}
+
+export async function getNotificationStatus(container: Container, id: string) {
+  const notification = await container.prisma.notification.findUniqueOrThrow({ where: { id } });
+  return notification.status;
+}
+
+/** Waits until a background process (e.g. the worker) moves the notification to `status`. */
+export async function waitForNotificationStatus(
+  container: Container,
+  id: string,
+  status: NotificationStatus,
+): Promise<void> {
+  await expect
+    .poll(() => getNotificationStatus(container, id), {
+      timeout: WAIT_TIMEOUT_MS,
+      interval: WAIT_INTERVAL_MS,
+    })
+    .toBe(status);
 }
 
 export async function resetDatabase(container: Container): Promise<void> {
