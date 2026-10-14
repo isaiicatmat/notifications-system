@@ -58,7 +58,13 @@ export function createContainer(config: AppConfig, options: ContainerOptions = {
 
   return {
     prisma,
-    app: { authService, notificationService, deliveryHistoryService, logger: options.logger },
+    app: { 
+        authService, 
+        notificationService, 
+        deliveryHistoryService, 
+        swaggerEnabled: config.swaggerEnabled, 
+        logger: options.logger 
+    },
     deliveryService,
     createWorker: (logger) =>
       new DeliveryWorker(

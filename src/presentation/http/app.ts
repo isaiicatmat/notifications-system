@@ -8,15 +8,13 @@ import { ErrorResponse } from "./schemas";
 import type { NotificationService } from "../../application/notification-service";
 import { registerNotificationRoutes } from "./notification-routes";
 import type { DeliveryHistoryService } from "../../application/delivery-history-service";
+import { registerSwagger } from "./swagger";
 
 export interface AppDependencies {
     authService: AuthService,
     notificationService: NotificationService,
     deliveryHistoryService: DeliveryHistoryService,
-    logger?: boolean
-}
-export interface AppDependencies {
-    authService: AuthService,
+    swaggerEnabled?: boolean,
     logger?: boolean
 }
 
@@ -26,6 +24,8 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     app.addSchema(ErrorResponse);
     app.decorateRequest('userId', '');
     registerErrorHandler(app);
+
+    if (deps.swaggerEnabled ?? true) await registerSwagger(app);
 
     //public routes
     app.get(
