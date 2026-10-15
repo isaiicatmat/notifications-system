@@ -39,7 +39,7 @@ export function registerErrorHandler(app: FastifyInstance): void {
         request.log.error(error);
         return reply
             .status(500)
-            .send({ error: 'INTERNAL_ERROR', message: 'Internal server error ' });
+            .send({ error: 'INTERNAL_ERROR', message: 'Internal server error' });
     });
 
     app.setNotFoundHandler((_request, reply) => {

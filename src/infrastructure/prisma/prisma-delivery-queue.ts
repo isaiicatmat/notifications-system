@@ -27,7 +27,7 @@ export class PrismaDeliveryQueue implements DeliveryQueue {
         const stale = { status: 'processing' as const, lockedAt: { lt: olderThan } };
         await this.prisma.notification.updateMany({
             where: { ...stale, attempts: { gte: maxAttempts } },
-            data: { status: 'failed', lockedAt: null }
+            data: { status: 'failed', lockedAt: null },
         });
 
         const { count } = await this.prisma.notification.updateMany({

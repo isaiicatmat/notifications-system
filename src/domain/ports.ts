@@ -16,7 +16,7 @@ export interface TokenPayload {
 }
 
 export interface TokenService {
-    sign(pyload: TokenPayload): Promise<{ token: string; expiresIn: string }>;
+    sign(payload: TokenPayload): Promise<{ token: string; expiresIn: string }>;
     verify(token: string): Promise<TokenPayload>;
 }
 

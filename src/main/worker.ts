@@ -23,12 +23,13 @@ async function main(): Promise<void> {
     });
 
     worker.start();
-    log.info({
+    log.info(
+        {
             pollIntervalMs: config.worker.pollIntervalMs,
             batchSize: config.worker.batchSize,
             maxAttempts: config.worker.maxAttempts,
         },
-        'worker started'
+        'worker started',
     );
 }
 

@@ -351,6 +351,5 @@ describe('worker process', () => {
 
         expect(stoppedWhileDelivering).toBe(false);
         expect((await row(notification.id)).status).toBe('sent');
-
     });
 });

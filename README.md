@@ -165,6 +165,20 @@ Each route's TypeBox schemas validate the input, filter the output (internal fie
 
 `Clock` is a port: backoff and recovery tests advance a fake clock instead of waiting. The application sets `next_attempt_at` with the same clock the worker uses, which avoids skew between the server clock and the database clock.
 
+**Delivery guarantees.**
+
+Delivery is **at-least-once**: if a worker dies after a provider accepted
+a message but before the row is marked `sent`, the notification is re-queued after the lock timeout
+and sent again. Exactly-once is not achievable across a database and an external provider without
+the provider's help, so real channels should pass an idempotency key (the notification id) so
+duplicates are discarded on the provider side. Notifications that keep crashing workers are marked
+`failed` after `WORKER_MAX_ATTEMPTS` instead of being retried forever.
+
+**Observability (not implemented).**
+
+Next steps would be structured logs with a correlation id per
+request and per delivery, and metrics for queue depth, delivery latency and failures per channel.
+
 ## Areas to improve
 
 - Channel rules (for example the SMS 160-character limit) are validated at **delivery** time, not at creation: the API answers 201 and the notification becomes `failed` later. Each channel could expose a `validate()` method used at creation too, to answer 400 immediately.

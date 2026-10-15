@@ -44,7 +44,7 @@ export class AuthService {
         if (!user) {
             //dummy avoids revealing which accounts exists.
             // A rapid response makes it easy to know
-            this.dummyHash ??= this.hasher.hash('dummy-password-for-timig');
+            this.dummyHash ??= this.hasher.hash('dummy-password-for-timing');
             await this.hasher.verify(await this.dummyHash, password);
             throw new UnauthorizedError(INVALID_CREDENTIALS);
         }

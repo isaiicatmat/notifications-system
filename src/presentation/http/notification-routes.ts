@@ -15,7 +15,7 @@ const Channel = Type.String({ minLength: 1, maxLength: 50, examples: ['email'] }
 const Recipient = Type.String({
     minLength: 1,
     maxLength: 320,
-    description: 'Email addres, phone number (E. 164) or device token, depending on the channel',
+    description: 'Email address, phone number (E. 164) or device token, depending on the channel',
     examples: ['user@example.com'],
 });
 
@@ -160,7 +160,7 @@ export function registerNotificationRoutes(
         {
             schema: {
                 tags: ['Notifications'],
-                summary: 'Delivery attemtps of a notification (oldest first)',
+                summary: 'Delivery attempts of a notification (oldest first)',
                 security,
                 params: IdParams,
                 response: {

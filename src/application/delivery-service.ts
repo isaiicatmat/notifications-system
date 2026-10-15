@@ -36,8 +36,8 @@ export class DeliveryService {
                 } catch (error) {
                     onError(error, notification.id);
                 }
-            })
-        )
+            }),
+        );
         return claimed.length;
     }
 

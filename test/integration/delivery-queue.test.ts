@@ -83,7 +83,11 @@ describe('recoverStale', () => {
         const [id] = ids as [string];
         await context.container.prisma.notification.update({
             where: { id },
-            data: { status: 'processing', attempts: 5, lockedAt: new Date(Date.now() - 10 * 60_000) }
+            data: {
+                status: 'processing',
+                attempts: 5,
+                lockedAt: new Date(Date.now() - 10 * 60_000),
+            },
         });
         await queue.recoverStale(new Date(Date.now() - 60_000), 5);
         expect((await findRow(id)).status).toBe('failed');

@@ -5,9 +5,18 @@ import type { Notification } from '../../src/domain/notification';
 import type { DeliveryAttemptRepository, DeliveryQueue } from '../../src/domain/ports';
 
 const notification: Notification = {
-    id: 'n-1', userId: 'u-1', title: 'Hi', content: 'Body', channel: 'email', recipient: 'a@b.co',
-    status: 'processing', attempts: 1, nextAttemptAt: new Date(), lockedAt: new Date(),
-    createdAt: new Date(), updatedAt: new Date(),
+    id: 'n-1',
+    userId: 'u-1',
+    title: 'Hi',
+    content: 'Body',
+    channel: 'email',
+    recipient: 'a@b.co',
+    status: 'processing',
+    attempts: 1,
+    nextAttemptAt: new Date(),
+    lockedAt: new Date(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
 };
 
 describe('DeliveryService.runOnce', () => {
@@ -29,9 +38,18 @@ describe('DeliveryService.runOnce', () => {
             name: 'email',
             send: async () => ({ outcome: 'sent', details: {} }),
         });
-        const service = new DeliveryService(queue, attempts, channels, { now: () => new Date() }, {
-            batchSize: 10, maxAttempts: 5, backoffBaseMs: 1000, lockTimeoutMs: 60000,
-        });
+        const service = new DeliveryService(
+            queue,
+            attempts,
+            channels,
+            { now: () => new Date() },
+            {
+                batchSize: 10,
+                maxAttempts: 5,
+                backoffBaseMs: 1000,
+                lockTimeoutMs: 60000,
+            },
+        );
 
         const reported: string[] = [];
         await service.runOnce((_error, id) => reported.push(id));
