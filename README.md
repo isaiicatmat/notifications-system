@@ -23,6 +23,8 @@ REST API where authenticated users manage their notifications and deliver them *
 
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/isaiicatmat/notifications-system/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/isaiicatmat/notifications-system/tree/main)
 
+[![Coverage Status](https://coveralls.io/repos/github/isaiicatmat/notifications-system/badge.svg?branch=main)](https://coveralls.io/github/isaiicatmat/notifications-system?branch=main)
+
 ## Techs
 
 - Node.js 20+ (Docker image: Node 24)
