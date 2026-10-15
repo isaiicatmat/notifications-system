@@ -22,6 +22,7 @@
     "test:integration": "vitest run --project integration",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "test:ci": "vitest run --coverage --reporter=default --reporter=junit --outputFile.junit=reports/junit.xml",
     "postinstall": "prisma generate"
   },
   "keywords": [],

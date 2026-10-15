@@ -27,7 +27,7 @@ export default defineConfig({
       provider: 'v8',
       include: ['src/**/*.ts'],
       exclude: ['src/main/**', 'src/infrastructure/prisma/generated/**'],
-      reporter: ['text', 'html'],
+      reporter: ['text', 'html', 'lcovonly'],
     },
   },
 });
