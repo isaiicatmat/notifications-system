@@ -1,4 +1,5 @@
 name: notification-system-manager
+
 services:
   db:
     image: postgres:16-alpine
@@ -16,6 +17,41 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  db-init:
+    build: { context: ., target: migrate }
+    image: notification-system-migrate
+    env_file: .env.docker
+    depends_on:
+      db: { condition: service_healthy }
+    restart: 'no'
+
+  api:
+    build: { context: ., target: runtime }
+    image: notification-system-app
+    env_file: .env.docker
+    ports:
+      - '3000:3000'
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  worker:
+    build: { context: ., target: runtime }
+    image: notification-system-app
+    command: ['node', 'dist/main/worker.js']
+    env_file: .env.docker
+    depends_on:
+      db-init: { condition: service_completed_successfully }
+    restart: unless-stopped
+
+  test:
+    profiles: ['test']
+    build: { context: ., target: test }
+    image: notification-system-test
+    env_file: .env.docker
+    depends_on:
+      db: { condition: service_healthy }
 
 volumes:
   pgdata:

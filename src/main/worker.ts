@@ -19,8 +19,8 @@ async function main(): Promise<void> {
     });
 
     worker.start();
-    logger.info(`started (poll ${config.worker.pollIntervalMs}ms, 
-        batch ${config.worker.batchSize}, max attempts ${config.worker.maxAttempts})`);
+    logger.info(`started (poll ${config.worker.pollIntervalMs}ms, batch ${config.worker.batchSize}, ` +
+      `max attempts ${config.worker.maxAttempts})`,);
 }
 
 main().catch((error) => {
