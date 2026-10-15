@@ -19,6 +19,10 @@ REST API where authenticated users manage their notifications and deliver them *
 - Users can only see and modify their own notifications
 - Interactive API documentation with Swagger
 
+## Badges
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/isaiicatmat/notifications-system/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/isaiicatmat/notifications-system/tree/main)
+
+
 ## Techs
 
 - Node.js 20+ (Docker image: Node 24)
