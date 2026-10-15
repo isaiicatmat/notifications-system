@@ -4,4 +4,3 @@ coverage
 .env
 src/infrastructure/prisma/generated
 .env.docker
-.env*
