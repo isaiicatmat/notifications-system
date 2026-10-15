@@ -42,6 +42,7 @@ REST API where authenticated users manage their notifications and deliver them *
 Requirements: Docker and Docker Compose.
 
 ```bash
+chmod 755 up_dev.sh
 ./up_dev.sh
 ```
 
@@ -56,6 +57,7 @@ It creates `.env.docker` from `.env.docker.example` if needed, builds the images
 Requirements: Docker and Docker Compose.
 
 ```bash
+chmod 755 up_test.sh
 ./up_test.sh
 ```
 
