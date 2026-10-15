@@ -28,7 +28,7 @@ export class DeliveryWorker {
         if (this.wake) {
             this.wake();
         }
-        this.loop = this.run();
+        await this.loop;
     }
 
     private async run(): Promise<void> {

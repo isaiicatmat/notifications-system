@@ -1,7 +1,7 @@
 {
     "name": "notification-system",
     "version": "1.0.0",
-    "description": "",
+    "description": "REST API where authenticated users manage their notifications and deliver them asynchronously through different channels (email, sms, push).",
     "main": "dist/main/server.js",
     "private": true,
     "engines": {
@@ -28,7 +28,7 @@
         "postinstall": "prisma generate"
     },
     "keywords": [],
-    "author": "",
+    "author": "Isaí C.",
     "license": "ISC",
     "type": "commonjs",
     "dependencies": {
@@ -41,7 +41,8 @@
         "dotenv": "^18.0.6",
         "fast-jwt": "^6.3.4",
         "fastify": "^5.12.5",
-        "pg": "^8.23.1"
+        "pg": "^8.23.1",
+        "pino": "^10.4.0"
     },
     "devDependencies": {
         "@types/node": "^26.6.4",

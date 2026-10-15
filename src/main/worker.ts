@@ -1,14 +1,18 @@
 import 'dotenv/config';
+import pino from 'pino';
+import type { WorkerLogger } from '../infrastructure/worker/delivery-worker';
 import { loadConfig } from '../shared/config';
 import { createContainer } from './container';
 import { onShutdown } from './shutdown';
 
+const log = pino({ name: 'worker' });
+
 async function main(): Promise<void> {
     const config = loadConfig();
     const container = createContainer(config);
-    const logger = {
-        info: (message: string) => console.log(`[worker] ${message}`),
-        error: (error: unknown, message: string) => console.error(`[wprker] ${message}`, error),
+    const logger: WorkerLogger = {
+        info: (message) => log.info(message),
+        error: (error, message) => log.error({ err: error }, message),
     };
     const worker = container.createWorker(logger);
 
@@ -19,13 +23,16 @@ async function main(): Promise<void> {
     });
 
     worker.start();
-    logger.info(
-        `started (poll ${config.worker.pollIntervalMs}ms, batch ${config.worker.batchSize}, ` +
-            `max attempts ${config.worker.maxAttempts})`,
+    log.info({
+            pollIntervalMs: config.worker.pollIntervalMs,
+            batchSize: config.worker.batchSize,
+            maxAttempts: config.worker.maxAttempts,
+        },
+        'worker started'
     );
 }
 
 main().catch((error) => {
-    console.error(error);
+    log.fatal({ err: error }, 'worker failed to start');
     process.exit(1);
 });

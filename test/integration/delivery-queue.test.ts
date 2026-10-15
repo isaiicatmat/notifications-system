@@ -73,9 +73,20 @@ describe('recoverStale', () => {
             data: { status: 'processing', lockedAt: new Date() },
         });
 
-        expect(await queue.recoverStale(new Date(Date.now() - 60_000))).toBe(1);
+        expect(await queue.recoverStale(new Date(Date.now() - 60_000), 5)).toBe(1);
         expect(await findRow(staleId)).toMatchObject({ status: 'pending', lockedAt: null });
         expect((await findRow(freshId)).status).toBe('processing');
+    });
+
+    it('fails stale notifications that already used all their attempts', async () => {
+        const { ids } = await seedNotifications(context.container, 1);
+        const [id] = ids as [string];
+        await context.container.prisma.notification.update({
+            where: { id },
+            data: { status: 'processing', attempts: 5, lockedAt: new Date(Date.now() - 10 * 60_000) }
+        });
+        await queue.recoverStale(new Date(Date.now() - 60_000), 5);
+        expect((await findRow(id)).status).toBe('failed');
     });
 });
 

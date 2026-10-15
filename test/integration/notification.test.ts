@@ -87,6 +87,14 @@ describe('PATCH /notifications/:id', () => {
     const patch = (id: string, headers: Auth, payload: object) =>
         context.app.inject({ method: 'PATCH', url: `/notifications/${id}`, headers, payload });
 
+    it('returns the real updatedAt after a change', async() => {
+        const { id } = (await create(carlos.headers)).json();
+        const res = await patch(id, carlos.headers, { title: 'Changed' });
+        const row = await context.container.prisma.notification.findUniqueOrThrow({ where: { id } });
+
+        expect(res.json().updatedAt).toBe(row.updatedAt.toISOString());
+    });
+
     it('updates a pending notification', async () => {
         const { id } = (await create(carlos.headers)).json();
         const res = await patch(id, carlos.headers, { title: 'Changed', channel: 'sms' });

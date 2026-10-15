@@ -45,7 +45,7 @@ export interface NotificationRepository {
 
 export interface DeliveryQueue {
     claimDue(now: Date, limit: number): Promise<Notification[]>;
-    recoverStale(olderThan: Date): Promise<number>;
+    recoverStale(olderThan: Date, maxAttempts: number): Promise<number>;
     markSent(id: string): Promise<boolean>;
     markFailed(id: string): Promise<boolean>;
     scheduleRetry(id: string, nextAttemptAt: Date): Promise<boolean>;

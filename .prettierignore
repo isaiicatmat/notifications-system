@@ -3,3 +3,4 @@ dist
 coverage
 src/infrastructure/prisma/generated
 package-lock.json
+reports

@@ -149,3 +149,12 @@ export class MutableClock implements Clock {
         this.current = new Date(this.current.getTime() + ms);
     }
 }
+
+/** A promise the test resolves manually: lets a fake channel "hang" until the test releases it. */
+export function createGate(): { wait: Promise<void>; release: () => void } {
+    let release: () => void = () => undefined;
+    const wait = new Promise<void>((resolve) => {
+        release = resolve;
+    });
+    return { wait, release: () => release() };
+}

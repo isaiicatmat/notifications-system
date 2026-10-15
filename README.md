@@ -174,4 +174,4 @@ Each route's TypeBox schemas validate the input, filter the output (internal fie
 - A seed script would provide a working app with sample data out of the box.
 - The runtime Docker image is about 800 MB because Prisma 7 pulls in heavy peer dependencies; it could be optimized.
 - Phone numbers are only validated for E.164 format; a library such as `libphonenumber-js` could validate them per country.
-- Deployment (for example a cloud provider with a managed PostgreSQL) and a CI pipeline running lint, typecheck and tests on every push.
+- Deployment (for example a cloud provider with a managed PostgreSQL) running lint, typecheck and tests on every push.

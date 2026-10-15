@@ -4,6 +4,7 @@ import type { Channel, DeliveryResult } from '../../src/domain/channel';
 import { createDefaultChannelRegistry } from '../../src/infrastructure/channels';
 import {
     MutableClock,
+    createGate,
     createTestContext,
     registerAndLogin,
     resetDatabase,
@@ -312,5 +313,44 @@ describe('worker process', () => {
         } finally {
             await worker.stop();
         }
+    });
+
+    it('stop() waits for the batch in progess before resolving', async () => {
+        const gate = createGate();
+        let sending = false;
+        const channels = new ChannelRegistry().register(
+            scriptedChannel('email', [sent], async () => {
+                sending = true;
+                await gate.wait;
+            }),
+        );
+        const { context, create, row } = await setup({
+            channels,
+            env: { WORKER_POLL_INTERVAL_MS: '20' },
+        });
+        const notification = await create({
+            title: 'Hi',
+            content: 'Body',
+            channel: 'email',
+            recipient: 'a@b.co',
+        });
+
+        const worker = context.container.createWorker(quietLogger);
+        worker.start();
+        await expect.poll(() => sending).toBe(true);
+
+        let stopped = false;
+        const stopping = worker.stop().then(() => {
+            stopped = true;
+        });
+        await new Promise((resolve) => setTimeout(resolve, 50));
+        const stoppedWhileDelivering = stopped;
+
+        gate.release();
+        await stopping;
+
+        expect(stoppedWhileDelivering).toBe(false);
+        expect((await row(notification.id)).status).toBe('sent');
+
     });
 });

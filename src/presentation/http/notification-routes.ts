@@ -64,7 +64,7 @@ export function toNotificationDto(notification: Notification): Static<typeof Not
         status: notification.status,
         attempts: notification.attempts,
         createdAt: notification.createdAt.toISOString(),
-        updatedAt: notification.createdAt.toISOString(),
+        updatedAt: notification.updatedAt.toISOString(),
     };
 }
 

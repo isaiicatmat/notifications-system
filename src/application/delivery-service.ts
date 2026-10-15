@@ -20,13 +20,24 @@ export class DeliveryService {
         private readonly options: DeliveryOptions,
     ) {}
 
-    async runOnce(): Promise<number> {
+    async runOnce(
+        onError: (error: unknown, notificationId: string) => void = () => undefined,
+    ): Promise<number> {
         const now = this.clock.now();
-        await this.queue.recoverStale(new Date(now.getTime() - this.options.lockTimeoutMs));
+        const lockedBefore = new Date(now.getTime() - this.options.lockTimeoutMs);
+        await this.queue.recoverStale(lockedBefore, this.options.maxAttempts);
         const claimed = await this.queue.claimDue(now, this.options.batchSize);
 
-        // One failing notification must not prevent the rest of the batch from being processed.
-        await Promise.allSettled(claimed.map((n) => this.deliver(n)));
+        // Each delivery handles its own failure, so one error neither stops the batch nor goes unnoticed
+        await Promise.all(
+            claimed.map(async (notification) => {
+                try {
+                    await this.deliver(notification);
+                } catch (error) {
+                    onError(error, notification.id);
+                }
+            })
+        )
         return claimed.length;
     }
 
