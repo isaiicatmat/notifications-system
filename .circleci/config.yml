@@ -2,6 +2,7 @@ version: 2.1
 
 orbs:
     node: circleci/node@5.0.2
+    coveralls: coveralls/coveralls@2.2.5
 
 executors:
     node-with-postgres:
@@ -21,7 +22,7 @@ jobs:
         steps:
             - checkout
             - node/install-packages: # npm ci with dependency caching: postinstall runs prisma generate
-              pkg-manager: npm
+                  pkg-manager: npm
             - run:
                   name: Check formatting, lint and types
                   command: |
@@ -38,6 +39,8 @@ jobs:
                   path: reports
             - store_artifacts:
                   path: coverage
+            - coveralls/upload:
+                  coverage_file: coverage/lcov.info
             - run:
                   name: Build app
                   command: npm run build
