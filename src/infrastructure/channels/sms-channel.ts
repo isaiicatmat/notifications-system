@@ -1,6 +1,6 @@
-import { randomUUID } from "node:crypto";
-import type { Channel, ChannelMessage, DeliveryResult } from "../../domain/channel";
-import type { Clock } from "../../domain/ports";
+import { randomUUID } from 'node:crypto';
+import type { Channel, ChannelMessage, DeliveryResult } from '../../domain/channel';
+import type { Clock } from '../../domain/ports';
 
 export const SMS_MAX_LENGTH = 160;
 
@@ -12,14 +12,14 @@ const E164_MAX_DIGITS = 15;
  * Example: +14155550123
  */
 function isE164PhoneNumber(value: string): boolean {
-  if (!value.startsWith('+')) return false;
-  const digits = value.slice(1);
-  return (
-    /^\d+$/.test(digits) &&
-    digits.length >= E164_MIN_DIGITS &&
-    digits.length <= E164_MAX_DIGITS &&
-    !digits.startsWith('0')
-  );
+    if (!value.startsWith('+')) return false;
+    const digits = value.slice(1);
+    return (
+        /^\d+$/.test(digits) &&
+        digits.length >= E164_MIN_DIGITS &&
+        digits.length <= E164_MAX_DIGITS &&
+        !digits.startsWith('0')
+    );
 }
 
 export class SmsChannel implements Channel {
@@ -52,8 +52,7 @@ export class SmsChannel implements Channel {
                 length: message.content.length,
                 sentAt: this.clock.now().toISOString(),
                 messageId: `sim-sms-${randomUUID()}`,
-            }
+            },
         };
-
     }
 }

@@ -9,8 +9,8 @@ import { SmsChannel } from './sms-channel';
  * To add a channel: implement `Channel` in this folder and register it here.
  */
 export function createDefaultChannelRegistry(clock: Clock): ChannelRegistry {
-  return new ChannelRegistry()
-    .register(new EmailChannel())
-    .register(new SmsChannel(clock))
-    .register(new PushChannel());
+    return new ChannelRegistry()
+        .register(new EmailChannel())
+        .register(new SmsChannel(clock))
+        .register(new PushChannel());
 }

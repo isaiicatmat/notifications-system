@@ -1,6 +1,6 @@
-import type { NewNotification, Notification, NotificationPatch } from "../../domain/notification";
-import type { NotificationRepository, UpdateOwnedResult } from "../../domain/ports";
-import type { PrismaClient } from "./client";
+import type { NewNotification, Notification, NotificationPatch } from '../../domain/notification';
+import type { NotificationRepository, UpdateOwnedResult } from '../../domain/ports';
+import type { PrismaClient } from './client';
 
 export class PrismaNotificationRepository implements NotificationRepository {
     constructor(private readonly prisma: PrismaClient) {}
@@ -12,7 +12,7 @@ export class PrismaNotificationRepository implements NotificationRepository {
     listByUser(userId: string): Promise<Notification[]> {
         return this.prisma.notification.findMany({
             where: { userId },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' },
         });
     }
 
@@ -24,16 +24,15 @@ export class PrismaNotificationRepository implements NotificationRepository {
         id: string,
         userId: string,
         patch: NotificationPatch,
-        nextAttemptAt: Date
+        nextAttemptAt: Date,
     ): Promise<UpdateOwnedResult> {
-        
         const { count } = await this.prisma.notification.updateMany({
             where: { id, userId, status: { in: ['pending', 'failed'] } },
-            data: { ...patch, status: 'pending', attempts: 0, nextAttemptAt, lockedAt: null }
+            data: { ...patch, status: 'pending', attempts: 0, nextAttemptAt, lockedAt: null },
         });
         const notification = await this.findOwned(id, userId);
         if (count === 0) return { kind: notification ? 'not_editable' : 'not_found' };
-        return notification ? { kind: 'updated', notification } : { kind: 'not_found'};
+        return notification ? { kind: 'updated', notification } : { kind: 'not_found' };
     }
 
     async deleteOwned(id: string, userId: string): Promise<boolean> {

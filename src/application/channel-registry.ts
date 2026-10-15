@@ -1,4 +1,4 @@
-import type { Channel } from "../domain/channel";
+import type { Channel } from '../domain/channel';
 
 export class ChannelRegistry {
     private readonly channels = new Map<string, Channel>();

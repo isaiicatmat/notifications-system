@@ -1,12 +1,12 @@
-import { beforeEach, describe, expect, it } from "vitest";
-import { ChannelRegistry } from "../../src/application/channel-registry";
-import { NotificationService } from "../../src/application/notification-service";
-import { ConflictError, NotFoundError, ValidationError } from "../../src/domain/errors";
-import { InMemoryNotificationRepository } from "./helper";
+import { beforeEach, describe, expect, it } from 'vitest';
+import { ChannelRegistry } from '../../src/application/channel-registry';
+import { NotificationService } from '../../src/application/notification-service';
+import { ConflictError, NotFoundError, ValidationError } from '../../src/domain/errors';
+import { InMemoryNotificationRepository } from './helper';
 
 const channel = (name: string) => ({
     name,
-    send: async () => ({ outcome: 'sent' as const, details: {} })
+    send: async () => ({ outcome: 'sent' as const, details: {} }),
 });
 
 const valid = { title: 'Hi', content: 'Hello', channel: 'email', recipient: 'a@b.co' };
@@ -18,15 +18,20 @@ beforeEach(() => {
     repo = new InMemoryNotificationRepository();
     service = new NotificationService(
         repo,
-        new ChannelRegistry().register(channel('email')).register(channel('sms')), 
-        { now: () => new Date() }
+        new ChannelRegistry().register(channel('email')).register(channel('sms')),
+        { now: () => new Date() },
     );
 });
 
 describe('create', () => {
     it('stores a pending notification owned by the caller', async () => {
         const notification = await service.create('u1', valid);
-        expect(notification).toMatchObject({ userId: 'u1', status: 'pending', channel: 'email', attempts: 0 });
+        expect(notification).toMatchObject({
+            userId: 'u1',
+            status: 'pending',
+            channel: 'email',
+            attempts: 0,
+        });
     });
 
     it('trims input', async () => {
@@ -44,8 +49,10 @@ describe('create', () => {
     it.each(['title', 'content', 'channel', 'recipient'] as const)(
         'rejects an empty %s',
         async (field) => {
-            await expect(service.create('u1', { ...valid, [field]: '    '})).rejects.toBeInstanceOf(ValidationError);
-        }
+            await expect(
+                service.create('u1', { ...valid, [field]: '    ' }),
+            ).rejects.toBeInstanceOf(ValidationError);
+        },
     );
 });
 
@@ -62,14 +69,17 @@ describe('list', () => {
 describe('update', () => {
     it('updated a pending notification', async () => {
         const notification = await service.create('u1', valid);
-        const updated = await service.update('u1', notification.id, { title: 'New', channel: 'sms' });
+        const updated = await service.update('u1', notification.id, {
+            title: 'New',
+            channel: 'sms',
+        });
         expect(updated).toMatchObject({ title: 'New', channel: 'sms', status: 'pending' });
     });
 
     it('re-ques a failed notification (status back to pending, attempts reset', async () => {
         const notification = await service.create('u1', valid);
         Object.assign(notification, { status: 'failed', attempts: 5 });
-        const updated = await service.update('u1', notification.id, { content: 'fixed'});
+        const updated = await service.update('u1', notification.id, { content: 'fixed' });
         expect(updated).toMatchObject({ status: 'pending', attempts: 0 });
     });
 
@@ -78,20 +88,28 @@ describe('update', () => {
         async (status) => {
             const notification = await service.create('u1', valid);
             notification.status = status;
-            await expect(service.update('u1', notification.id, { title: 'x'})).rejects.toBeInstanceOf(ConflictError);
+            await expect(
+                service.update('u1', notification.id, { title: 'x' }),
+            ).rejects.toBeInstanceOf(ConflictError);
             expect(notification.title).toBe('Hi');
-        }
+        },
     );
 
     it('reject an empty patch and an unsopported channel', async () => {
         const notification = await service.create('u1', valid);
-        await expect(service.update('u1', notification.id, {})).rejects.toBeInstanceOf(ValidationError);
-        await expect (service.update('u1', notification.id, { channel: 'fax', })).rejects.toBeInstanceOf(ValidationError);
+        await expect(service.update('u1', notification.id, {})).rejects.toBeInstanceOf(
+            ValidationError,
+        );
+        await expect(
+            service.update('u1', notification.id, { channel: 'fax' }),
+        ).rejects.toBeInstanceOf(ValidationError);
     });
 
     it("treats another user's notification as not found", async () => {
         const notification = await service.create('u1', valid);
-        await expect(service.update('u2', notification.id, { title: 'x' })).rejects.toBeInstanceOf(NotFoundError);
+        await expect(service.update('u2', notification.id, { title: 'x' })).rejects.toBeInstanceOf(
+            NotFoundError,
+        );
     });
 });
 
@@ -102,7 +120,7 @@ describe('remove', () => {
         await service.remove('u1', notification.id);
         expect(repo.items).toHaveLength(0);
     });
-    
+
     it('does not delete or reveal notifications of other users', async () => {
         const notification = await service.create('u1', valid);
         await expect(service.remove('u2', notification.id)).rejects.toBeInstanceOf(NotFoundError);

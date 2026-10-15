@@ -1,21 +1,26 @@
-import { ConflictError, UnauthorizedError } from "../../src/domain/errors";
-import { isEditable, NewNotification, Notification, NotificationPatch } from "../../src/domain/notification";
-import type { 
+import { ConflictError, UnauthorizedError } from '../../src/domain/errors';
+import {
+    isEditable,
+    NewNotification,
+    Notification,
+    NotificationPatch,
+} from '../../src/domain/notification';
+import type {
     NotificationRepository,
     PasswordHasher,
     TokenPayload,
     TokenService,
     UpdateOwnedResult,
-    UserRepository
-} from "../../src/domain/ports";
-import type { User } from "../../src/domain/user";
+    UserRepository,
+} from '../../src/domain/ports';
+import type { User } from '../../src/domain/user';
 
 export class InMemoryUserRepository implements UserRepository {
     readonly users: User[] = [];
 
-    async create(data: {email: string; passwordHash: string }): Promise<User> {
+    async create(data: { email: string; passwordHash: string }): Promise<User> {
         if (this.users.some((u) => u.email === data.email)) throw new ConflictError('exists');
-        const user = {id: `user-${this.users.length + 1}`, createdAt: new Date(), ...data };
+        const user = { id: `user-${this.users.length + 1}`, createdAt: new Date(), ...data };
         this.users.push(user);
         return user;
     }
@@ -59,7 +64,7 @@ export class InMemoryNotificationRepository implements NotificationRepository {
             lockedAt: null,
             createdAt: now,
             updatedAt: now,
-            ...data
+            ...data,
         };
         this.items.push(notification);
         return notification;
@@ -70,25 +75,30 @@ export class InMemoryNotificationRepository implements NotificationRepository {
     }
 
     async findOwned(id: string, userId: string): Promise<Notification | null> {
-        return this.items.find(
-            (notification) => notification.id === id && notification.userId === userId) ?? null;
+        return (
+            this.items.find(
+                (notification) => notification.id === id && notification.userId === userId,
+            ) ?? null
+        );
     }
 
     async updateOwned(
-        id: string, 
-        userId: string, 
+        id: string,
+        userId: string,
         patch: NotificationPatch,
-        nextAttemptAt: Date
+        nextAttemptAt: Date,
     ): Promise<UpdateOwnedResult> {
         const notification = await this.findOwned(id, userId);
         if (!notification) return { kind: 'not_found' };
         if (!isEditable(notification.status)) return { kind: 'not_editable' };
         Object.assign(notification, patch, { status: 'pending', attempts: 0, nextAttemptAt });
-        return {kind: 'updated', notification }
+        return { kind: 'updated', notification };
     }
 
     async deleteOwned(id: string, userId: string): Promise<boolean> {
-        const index = this.items.findIndex((notification) => notification.id === id && notification.userId === userId);
+        const index = this.items.findIndex(
+            (notification) => notification.id === id && notification.userId === userId,
+        );
         if (index === -1) return false;
         this.items.splice(index, 1);
         return true;

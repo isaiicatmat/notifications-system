@@ -1,48 +1,48 @@
 version: 2.1
 
 orbs:
-  node: circleci/node@5.0.2
+    node: circleci/node@5.0.2
 
 executors:
-  node-with-postgres:
-    docker:
-      - image: cimg/node:lts #Node LTS (>=20);
-      - image: postgres:16-alpine #secondary container, reachable at localhost:5432
+    node-with-postgres:
+        docker:
+            - image: cimg/node:lts #Node LTS (>=20);
+            - image: postgres:16-alpine #secondary container, reachable at localhost:5432
+              environment:
+                  POSTGRES_USER: postgres
+                  POSTGRES_PASSWORD: postgres
+                  POSTGRES_DB: notifications_test
         environment:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: notifications_test
-    environment:
-      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications_test?schema=public
+            TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/notifications_test?schema=public
 
 jobs:
-  build_and_test:
-    executor: node-with-postgres
-    steps:
-      - checkout
-      - node/install-packages: # npm ci with dependency caching: postinstall runs prisma generate
-        pkg-manager: npm
-      - run:
-          name: Check formatting, lint and types
-          command: |
-            npm run format:check
-            npm run lint
-            npm run typecheck
-      - run:
-          name: Wait for PostgreSQL
-          command: node scripts/wait-for-port.mjs localhost 5432
-      - run:
-          name: Run tests
-          command: npm run test:ci
-      - store_test_results:
-          path: reports
-      - store_artifacts:
-          path: coverage
-      - run:
-          name: Build app
-          command: npm run build
+    build_and_test:
+        executor: node-with-postgres
+        steps:
+            - checkout
+            - node/install-packages: # npm ci with dependency caching: postinstall runs prisma generate
+              pkg-manager: npm
+            - run:
+                  name: Check formatting, lint and types
+                  command: |
+                      npm run format:check
+                      npm run lint
+                      npm run typecheck
+            - run:
+                  name: Wait for PostgreSQL
+                  command: node scripts/wait-for-port.mjs localhost 5432
+            - run:
+                  name: Run tests
+                  command: npm run test:ci
+            - store_test_results:
+                  path: reports
+            - store_artifacts:
+                  path: coverage
+            - run:
+                  name: Build app
+                  command: npm run build
 
 workflows:
-  ci:
-    jobs:
-      - build_and_test
+    ci:
+        jobs:
+            - build_and_test

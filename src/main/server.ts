@@ -9,10 +9,12 @@ async function main(): Promise<void> {
     const container = createContainer(config, { logger: true });
     const app = await buildApp(container.app);
 
-    const worker = config.worker.inProcess ? container.createWorker({ 
-        info: (message) => app.log.info(message), 
-        error: (error, message) => app.log.error(error, message)
-    }) : undefined;
+    const worker = config.worker.inProcess
+        ? container.createWorker({
+              info: (message) => app.log.info(message),
+              error: (error, message) => app.log.error(error, message),
+          })
+        : undefined;
 
     onShutdown(async (signal) => {
         app.log.info(`${signal} received, shutting down`);
@@ -36,5 +38,4 @@ async function main(): Promise<void> {
 main().catch((error) => {
     console.error(error);
     process.exit(1);
-})
-
+});

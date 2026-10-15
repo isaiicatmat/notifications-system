@@ -7,17 +7,17 @@ export abstract class DomainError extends Error {
 }
 
 export class ValidationError extends DomainError {
-        readonly code = 'VALIDATION_ERROR';
+    readonly code = 'VALIDATION_ERROR';
 }
 
 export class UnauthorizedError extends DomainError {
-        readonly code = 'UNAUTHORIZED';
+    readonly code = 'UNAUTHORIZED';
 }
 
 export class NotFoundError extends DomainError {
-        readonly code = 'NOT_FOUND';
+    readonly code = 'NOT_FOUND';
 }
 
 export class ConflictError extends DomainError {
-        readonly code = 'CONFLICT';
+    readonly code = 'CONFLICT';
 }

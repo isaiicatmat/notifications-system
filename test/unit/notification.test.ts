@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { NOTIFICATION_STATUSES, canTransition, isEditable } from "../../src/domain/notification";
+import { describe, expect, it } from 'vitest';
+import { NOTIFICATION_STATUSES, canTransition, isEditable } from '../../src/domain/notification';
 
 describe('notification status transitions', () => {
     it.each([
@@ -9,7 +9,7 @@ describe('notification status transitions', () => {
         ['processing', 'pending'],
         ['failed', 'pending'],
     ] as const)('allow %s -> %s', (from, to) => {
-        expect(canTransition(from, to)).toBe(true)
+        expect(canTransition(from, to)).toBe(true);
     });
 
     it.each([
@@ -18,8 +18,8 @@ describe('notification status transitions', () => {
         ['sent', 'pending'],
         ['sent', 'failed'],
         ['failed', 'sent'],
-        ['failed', 'processing']
-    ]as const)('rejects %s -> %s', (from, to) => {
+        ['failed', 'processing'],
+    ] as const)('rejects %s -> %s', (from, to) => {
         expect(canTransition(from, to)).toBe(false);
     });
 

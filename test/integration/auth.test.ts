@@ -1,7 +1,7 @@
-import { createSigner } from "fast-jwt";
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createTestContext, registerAndLogin, resetDatabase, type TestContext } from "./helper";
-import { TEST_JWT_SECRET } from "./test-env";
+import { createSigner } from 'fast-jwt';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { createTestContext, registerAndLogin, resetDatabase, type TestContext } from './helper';
+import { TEST_JWT_SECRET } from './test-env';
 
 let context: TestContext;
 
@@ -17,15 +17,15 @@ const PROTECTED_URL = '/notifications';
 describe('POST /auth/register', () => {
     it('creates the user and never returns password data', async () => {
         const res = await post('/auth/register', {
-            email: 'Ana@Example.com', 
-            password: 'password123'
+            email: 'Ana@Example.com',
+            password: 'password123',
         });
         expect(res.statusCode).toBe(201);
         expect(res.json()).toEqual({ id: expect.any(String), email: 'ana@example.com' });
         expect(res.body).not.toMatch(/pass/i);
     });
 
-    it('stores only a hash of the password', async() => {
+    it('stores only a hash of the password', async () => {
         await post('/auth/register', { email: 'ana@example.com', password: 'password123' });
         const user = await context.container.prisma.user.findUniqueOrThrow({
             where: { email: 'ana@example.com' },
@@ -36,16 +36,25 @@ describe('POST /auth/register', () => {
 
     it('responds 409 for a duplicate email, case-insensitively', async () => {
         await post('/auth/register', { email: 'ana@example.com', password: 'password123' });
-        const res = await post('/auth/register', { email: 'ANA@example.com', password: 'password123' });
+        const res = await post('/auth/register', {
+            email: 'ANA@example.com',
+            password: 'password123',
+        });
         expect(res.statusCode).toBe(409);
         expect(res.json().error).toBe('CONFLICT');
         expect(await context.container.prisma.user.count()).toBe(1);
     });
 
     it('responds 400 for an invalid email or short password', async () => {
-        expect( (await post('/auth/register', { email: 'no-an-email', password: 'password123' })).statusCode).toBe(400);
-        expect( (await post('/auth/register', { email: 'test@gmail.com', password: 'short' })).statusCode).toBe(400);
-        expect( (await post('/auth/register', {})).statusCode).toBe(400);
+        expect(
+            (await post('/auth/register', { email: 'no-an-email', password: 'password123' }))
+                .statusCode,
+        ).toBe(400);
+        expect(
+            (await post('/auth/register', { email: 'test@gmail.com', password: 'short' }))
+                .statusCode,
+        ).toBe(400);
+        expect((await post('/auth/register', {})).statusCode).toBe(400);
     });
 });
 
@@ -55,14 +64,23 @@ describe('POST /auth/login', () => {
     });
 
     it('returns an access token for valid credentials', async () => {
-        const res = await post('/auth/login', { email: 'ana@example.com', password: 'password123' });
+        const res = await post('/auth/login', {
+            email: 'ana@example.com',
+            password: 'password123',
+        });
         expect(res.statusCode).toBe(200);
         expect(res.json()).toMatchObject({ accessToken: expect.any(String), tokenType: 'Bearer' });
-    })
+    });
 
     it('responds 401 with the same message for wrong password and unknown email', async () => {
-        const wrongPassword = await post('/auth/login', { email: 'ana@example.com', password: 'wrong-password' });
-        const unknownUser = await post('/auth/login', { email: 'ghost@example.com', password: 'password123' });
+        const wrongPassword = await post('/auth/login', {
+            email: 'ana@example.com',
+            password: 'wrong-password',
+        });
+        const unknownUser = await post('/auth/login', {
+            email: 'ghost@example.com',
+            password: 'password123',
+        });
         expect(wrongPassword.statusCode).toBe(401);
         expect(unknownUser.statusCode).toBe(401);
         expect(unknownUser.json()).toEqual(wrongPassword.json());
@@ -70,22 +88,22 @@ describe('POST /auth/login', () => {
 });
 
 describe('protected endpoint', () => {
-    const get = (authorization?: string) => 
+    const get = (authorization?: string) =>
         context.app.inject({
             method: 'GET',
             url: PROTECTED_URL,
-            headers: authorization ? { authorization } : {}
+            headers: authorization ? { authorization } : {},
         });
-    
+
     it('serves public routes without a token', async () => {
         const response = await context.app.inject({ method: 'GET', url: '/health' });
         expect(response.statusCode).toBe(200);
-    })
+    });
 
     it('responds 401 without a token', async () => {
         const response = await get();
         expect(response.statusCode).toBe(401);
-    })
+    });
 
     it('responds 401 for a malformed or tampered token', async () => {
         const { token } = await registerAndLogin(context.app);

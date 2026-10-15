@@ -1,6 +1,6 @@
-import type { DeliveryAttempt, NewDeliveryAttempt } from "./delivery-attempts";
-import type { NewNotification, Notification, NotificationPatch } from "./notification";
-import type { User } from "./user";
+import type { DeliveryAttempt, NewDeliveryAttempt } from './delivery-attempts';
+import type { NewNotification, Notification, NotificationPatch } from './notification';
+import type { User } from './user';
 
 export interface Clock {
     now(): Date;
@@ -16,8 +16,8 @@ export interface TokenPayload {
 }
 
 export interface TokenService {
-    sign(pyload: TokenPayload): Promise<{ token: string; expiresIn: string}>;
-    verify(token: string): Promise<TokenPayload>
+    sign(pyload: TokenPayload): Promise<{ token: string; expiresIn: string }>;
+    verify(token: string): Promise<TokenPayload>;
 }
 
 export interface UserRepository {
@@ -25,9 +25,9 @@ export interface UserRepository {
     findByEmail(email: string): Promise<User | null>;
 }
 
-export type UpdateOwnedResult = 
-    | { kind: 'updated'; notification: Notification } 
-    | { kind: 'not_found' } 
+export type UpdateOwnedResult =
+    | { kind: 'updated'; notification: Notification }
+    | { kind: 'not_found' }
     | { kind: 'not_editable' };
 
 export interface NotificationRepository {
@@ -38,7 +38,7 @@ export interface NotificationRepository {
         id: string,
         userId: string,
         patch: NotificationPatch,
-        nextAttemptAt: Date
+        nextAttemptAt: Date,
     ): Promise<UpdateOwnedResult>;
     deleteOwned(id: string, userId: string): Promise<boolean>;
 }

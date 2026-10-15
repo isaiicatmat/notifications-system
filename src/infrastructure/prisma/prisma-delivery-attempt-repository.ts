@@ -1,11 +1,11 @@
 import type {
-     DeliveryAttempt,
-     DeliveryOutcome,
-     NewDeliveryAttempt
-} from "../../domain/delivery-attempts";
-import type { DeliveryAttemptRepository } from "../../domain/ports";
-import type { PrismaClient } from "./client";
-import type { Prisma } from "./generated/client";
+    DeliveryAttempt,
+    DeliveryOutcome,
+    NewDeliveryAttempt,
+} from '../../domain/delivery-attempts';
+import type { DeliveryAttemptRepository } from '../../domain/ports';
+import type { PrismaClient } from './client';
+import type { Prisma } from './generated/client';
 
 export class PrismaDeliveryAttemptRepository implements DeliveryAttemptRepository {
     constructor(private readonly prisma: PrismaClient) {}
@@ -19,10 +19,10 @@ export class PrismaDeliveryAttemptRepository implements DeliveryAttemptRepositor
                     outcome: data.outcome,
                     reason: data.reason ?? null,
                     details: data.details as Prisma.InputJsonValue,
-                    attemptedAt: data.attemptedAt
-                }
+                    attemptedAt: data.attemptedAt,
+                },
             });
-        } catch(error) {
+        } catch (error) {
             // P2003: the notification was deleted while being processed; there is nothing to attach history to.
             if ((error as { code?: string }).code === 'P2003') return;
             throw error;
@@ -32,7 +32,7 @@ export class PrismaDeliveryAttemptRepository implements DeliveryAttemptRepositor
     async listByNotification(notificationId: string): Promise<DeliveryAttempt[]> {
         const rows = await this.prisma.deliveryAttempt.findMany({
             where: { notificationId },
-            orderBy: { attemptedAt: 'asc' }
+            orderBy: { attemptedAt: 'asc' },
         });
 
         return rows.map((row) => ({
@@ -42,7 +42,7 @@ export class PrismaDeliveryAttemptRepository implements DeliveryAttemptRepositor
             outcome: row.outcome as DeliveryOutcome,
             reason: row.reason,
             details: (row.details ?? {}) as Record<string, unknown>,
-            attemptedAt: row.attemptedAt
+            attemptedAt: row.attemptedAt,
         }));
     }
 }

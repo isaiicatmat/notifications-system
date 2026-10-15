@@ -1,8 +1,8 @@
-import type { DeliveryResult } from "../domain/channel";
-import type { Notification } from "../domain/notification";
-import type { Clock, DeliveryAttemptRepository, DeliveryQueue } from "../domain/ports";
-import { backoffDelayMs } from "./backoff";
-import type { ChannelRegistry } from "./channel-registry";
+import type { DeliveryResult } from '../domain/channel';
+import type { Notification } from '../domain/notification';
+import type { Clock, DeliveryAttemptRepository, DeliveryQueue } from '../domain/ports';
+import { backoffDelayMs } from './backoff';
+import type { ChannelRegistry } from './channel-registry';
 
 export interface DeliveryOptions {
     batchSize: number;
@@ -17,7 +17,7 @@ export class DeliveryService {
         private readonly attempts: DeliveryAttemptRepository,
         private readonly channels: ChannelRegistry,
         private readonly clock: Clock,
-        private readonly options: DeliveryOptions
+        private readonly options: DeliveryOptions,
     ) {}
 
     async runOnce(): Promise<number> {
@@ -32,8 +32,11 @@ export class DeliveryService {
 
     private async deliver(notification: Notification): Promise<void> {
         const result = await this.send(notification);
-        const exhausted = result.outcome === 'retryable' && notification.attempts >= this.options.maxAttempts;
-        const reason = exhausted ? `${result.reason ?? 'Delivery failed'} (max attempts reached)` : result.reason;
+        const exhausted =
+            result.outcome === 'retryable' && notification.attempts >= this.options.maxAttempts;
+        const reason = exhausted
+            ? `${result.reason ?? 'Delivery failed'} (max attempts reached)`
+            : result.reason;
 
         await this.attempts.record({
             notificationId: notification.id,
@@ -41,7 +44,7 @@ export class DeliveryService {
             outcome: result.outcome,
             reason,
             details: result.details,
-            attemptedAt: this.clock.now()
+            attemptedAt: this.clock.now(),
         });
 
         if (result.outcome === 'sent') {
@@ -50,9 +53,11 @@ export class DeliveryService {
             await this.queue.markFailed(notification.id);
         } else {
             const delay = backoffDelayMs(notification.attempts, this.options.backoffBaseMs);
-            await this.queue.scheduleRetry(notification.id, new Date(this.clock.now().getTime() + delay));
+            await this.queue.scheduleRetry(
+                notification.id,
+                new Date(this.clock.now().getTime() + delay),
+            );
         }
-
     }
 
     private async send(notification: Notification): Promise<DeliveryResult> {
@@ -61,7 +66,7 @@ export class DeliveryService {
             return {
                 outcome: 'permanent',
                 reason: `Unsupported channel "${notification.channel}"`,
-                details: {}
+                details: {},
             };
         }
 
@@ -70,14 +75,14 @@ export class DeliveryService {
                 id: notification.id,
                 title: notification.title,
                 content: notification.content,
-                recipient: notification.recipient
+                recipient: notification.recipient,
             });
-        } catch(error) {
+        } catch (error) {
             return {
                 outcome: 'retryable',
                 reason: error instanceof Error ? error.message : 'Unexpected channel error',
-                details: {}
-            }
+                details: {},
+            };
         }
     }
 }

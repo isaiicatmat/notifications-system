@@ -1,7 +1,7 @@
-import { ConflictError, NotFoundError, ValidationError } from "../domain/errors";
-import type { NewNotification, Notification, NotificationPatch } from "../domain/notification";
-import type { Clock, NotificationRepository } from "../domain/ports";
-import type { ChannelRegistry } from "./channel-registry";
+import { ConflictError, NotFoundError, ValidationError } from '../domain/errors';
+import type { NewNotification, Notification, NotificationPatch } from '../domain/notification';
+import type { Clock, NotificationRepository } from '../domain/ports';
+import type { ChannelRegistry } from './channel-registry';
 
 export type CreateNotificationInput = Omit<NewNotification, 'userId' | 'nextAttemptAt'>;
 
@@ -9,7 +9,7 @@ export class NotificationService {
     constructor(
         private readonly notifications: NotificationRepository,
         private readonly channels: ChannelRegistry,
-        private readonly clock: Clock
+        private readonly clock: Clock,
     ) {}
 
     async create(userId: string, input: CreateNotificationInput): Promise<Notification> {
@@ -19,7 +19,7 @@ export class NotificationService {
         }
 
         this.assertSupportChannel(data.channel);
-        return this.notifications.create( { userId, ...data, nextAttemptAt: this.clock.now()} );
+        return this.notifications.create({ userId, ...data, nextAttemptAt: this.clock.now() });
     }
 
     list(userId: string): Promise<Notification[]> {
@@ -28,7 +28,8 @@ export class NotificationService {
 
     async update(userId: string, id: string, patch: NotificationPatch): Promise<Notification> {
         const data = this.sanitize(patch);
-        if (Object.keys(data).length === 0) throw new ValidationError('At least one field is required');
+        if (Object.keys(data).length === 0)
+            throw new ValidationError('At least one field is required');
         for (const [field, value] of Object.entries(data)) {
             if (!value) throw new ValidationError(`${field} must not be empty`);
         }
@@ -40,7 +41,7 @@ export class NotificationService {
         if (result.kind === 'not_editable') {
             throw new ConflictError('Notification can no longer be modified');
         }
-        
+
         return result.notification;
     }
 
@@ -62,7 +63,7 @@ export class NotificationService {
     private assertSupportChannel(channel: string): void {
         if (!this.channels.has(channel)) {
             throw new ValidationError(
-                `Unsupported channel "${channel}". Supported channels: ${this.channels.names().join(', ')}`
+                `Unsupported channel "${channel}". Supported channels: ${this.channels.names().join(', ')}`,
             );
         }
     }

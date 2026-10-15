@@ -1,5 +1,5 @@
-import { Channel, ChannelMessage, DeliveryResult } from "../../domain/channel";
-import { randomUUID } from "node:crypto";
+import { Channel, ChannelMessage, DeliveryResult } from '../../domain/channel';
+import { randomUUID } from 'node:crypto';
 
 const DEVICE_TOKEN_MIN_LENGTH = 32;
 const DEVICE_TOKEN_MAX_LENGTH = 4096;
@@ -7,11 +7,11 @@ const DEVICE_TOKEN_MAX_LENGTH = 4096;
 const DEVICE_TOKEN_CHARACTERS = /^[A-Za-z0-9_:.-]+$/;
 
 function isValidDeviceToken(value: string): boolean {
-  return (
-    value.length >= DEVICE_TOKEN_MIN_LENGTH &&
-    value.length <= DEVICE_TOKEN_MAX_LENGTH &&
-    DEVICE_TOKEN_CHARACTERS.test(value)
-  );
+    return (
+        value.length >= DEVICE_TOKEN_MIN_LENGTH &&
+        value.length <= DEVICE_TOKEN_MAX_LENGTH &&
+        DEVICE_TOKEN_CHARACTERS.test(value)
+    );
 }
 
 export class PushChannel implements Channel {
@@ -34,7 +34,7 @@ export class PushChannel implements Channel {
 
         return {
             outcome: 'sent',
-            details: { payload, status: 'delivered', messageId: `sim-push-${randomUUID()}` }
-        }
+            details: { payload, status: 'delivered', messageId: `sim-push-${randomUUID()}` },
+        };
     }
 }

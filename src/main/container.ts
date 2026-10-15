@@ -18,61 +18,61 @@ import type { AppConfig } from '../shared/config';
 import { systemClock } from '../shared/system-clock';
 
 export interface Container {
-  prisma: PrismaClient;
-  app: AppDependencies;
-  deliveryService: DeliveryService;
-  createWorker(logger: WorkerLogger): DeliveryWorker;
-  close(): Promise<void>;
+    prisma: PrismaClient;
+    app: AppDependencies;
+    deliveryService: DeliveryService;
+    createWorker(logger: WorkerLogger): DeliveryWorker;
+    close(): Promise<void>;
 }
 
 export interface ContainerOptions {
-  logger?: boolean;
-  channels?: ChannelRegistry;
-  clock?: Clock;
+    logger?: boolean;
+    channels?: ChannelRegistry;
+    clock?: Clock;
 }
 
 /** Composition root: the only place where concrete implementations are wired to ports. */
 export function createContainer(config: AppConfig, options: ContainerOptions = {}): Container {
-  const clock = options.clock ?? systemClock;
-  const prisma = createPrismaClient(config.databaseUrl);
-  const channels = options.channels ?? createDefaultChannelRegistry(clock);
+    const clock = options.clock ?? systemClock;
+    const prisma = createPrismaClient(config.databaseUrl);
+    const channels = options.channels ?? createDefaultChannelRegistry(clock);
 
-  const userRepository = new PrismaUserRepository(prisma);
-  const notificationRepository = new PrismaNotificationRepository(prisma);
-  const attemptRepository = new PrismaDeliveryAttemptRepository(prisma);
-  const queue = new PrismaDeliveryQueue(prisma);
+    const userRepository = new PrismaUserRepository(prisma);
+    const notificationRepository = new PrismaNotificationRepository(prisma);
+    const attemptRepository = new PrismaDeliveryAttemptRepository(prisma);
+    const queue = new PrismaDeliveryQueue(prisma);
 
-  const tokens = new JwtTokenService(config.jwtSecret, config.jwtExpiresIn);
-  const authService = new AuthService(userRepository, new Argon2PasswordHasher(), tokens);
-  const notificationService = new NotificationService(notificationRepository, channels, clock);
-  const deliveryHistoryService = new DeliveryHistoryService(
-    notificationRepository,
-    attemptRepository,
-  );
-  const deliveryService = new DeliveryService(queue, attemptRepository, channels, clock, {
-    batchSize: config.worker.batchSize,
-    maxAttempts: config.worker.maxAttempts,
-    backoffBaseMs: config.worker.backoffBaseMs,
-    lockTimeoutMs: config.worker.lockTimeoutMs,
-  });
+    const tokens = new JwtTokenService(config.jwtSecret, config.jwtExpiresIn);
+    const authService = new AuthService(userRepository, new Argon2PasswordHasher(), tokens);
+    const notificationService = new NotificationService(notificationRepository, channels, clock);
+    const deliveryHistoryService = new DeliveryHistoryService(
+        notificationRepository,
+        attemptRepository,
+    );
+    const deliveryService = new DeliveryService(queue, attemptRepository, channels, clock, {
+        batchSize: config.worker.batchSize,
+        maxAttempts: config.worker.maxAttempts,
+        backoffBaseMs: config.worker.backoffBaseMs,
+        lockTimeoutMs: config.worker.lockTimeoutMs,
+    });
 
-  return {
-    prisma,
-    app: { 
-        authService, 
-        notificationService, 
-        deliveryHistoryService, 
-        swaggerEnabled: config.swaggerEnabled, 
-        logger: options.logger 
-    },
-    deliveryService,
-    createWorker: (logger) =>
-      new DeliveryWorker(
+    return {
+        prisma,
+        app: {
+            authService,
+            notificationService,
+            deliveryHistoryService,
+            swaggerEnabled: config.swaggerEnabled,
+            logger: options.logger,
+        },
         deliveryService,
-        config.worker.pollIntervalMs,
-        config.worker.batchSize,
-        logger,
-      ),
-    close: () => prisma.$disconnect(),
-  };
+        createWorker: (logger) =>
+            new DeliveryWorker(
+                deliveryService,
+                config.worker.pollIntervalMs,
+                config.worker.batchSize,
+                logger,
+            ),
+        close: () => prisma.$disconnect(),
+    };
 }

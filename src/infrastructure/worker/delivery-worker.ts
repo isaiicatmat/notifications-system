@@ -1,20 +1,20 @@
-import type { DeliveryService } from "../../application/delivery-service";
+import type { DeliveryService } from '../../application/delivery-service';
 
 export interface WorkerLogger {
     info(message: string): void;
-    error(error:unknown, message: string): void;
+    error(error: unknown, message: string): void;
 }
 
 export class DeliveryWorker {
     private running = false;
     private loop: Promise<void> | undefined;
-    private wake: (() => void ) | undefined;
+    private wake: (() => void) | undefined;
 
     constructor(
         private readonly delivery: DeliveryService,
         private readonly pollIntervalMs: number,
         private readonly batchSize: number,
-        private readonly logger: WorkerLogger
+        private readonly logger: WorkerLogger,
     ) {}
 
     start(): void {
@@ -36,7 +36,7 @@ export class DeliveryWorker {
             let claimed = 0;
             try {
                 claimed = await this.delivery.runOnce();
-            } catch(error) {
+            } catch (error) {
                 this.logger.error(error, 'Delivery iteration failed');
             }
 
@@ -50,7 +50,7 @@ export class DeliveryWorker {
             this.wake = () => {
                 clearTimeout(timer);
                 resolve();
-            } 
-        })
+            };
+        });
     }
 }

@@ -1,21 +1,21 @@
-import { Type } from "@sinclair/typebox";
-import Fastify, { type FastifyInstance } from "fastify";
-import type { AuthService } from "../../application/auth-service";
-import { createAuthenticationHook } from "./auth-hooks";
-import { registerAuthRoutes } from "./auth-routes";
-import { registerErrorHandler } from "./error-handler";
-import { ErrorResponse } from "./schemas";
-import type { NotificationService } from "../../application/notification-service";
-import { registerNotificationRoutes } from "./notification-routes";
-import type { DeliveryHistoryService } from "../../application/delivery-history-service";
-import { registerSwagger } from "./swagger";
+import { Type } from '@sinclair/typebox';
+import Fastify, { type FastifyInstance } from 'fastify';
+import type { AuthService } from '../../application/auth-service';
+import { createAuthenticationHook } from './auth-hooks';
+import { registerAuthRoutes } from './auth-routes';
+import { registerErrorHandler } from './error-handler';
+import { ErrorResponse } from './schemas';
+import type { NotificationService } from '../../application/notification-service';
+import { registerNotificationRoutes } from './notification-routes';
+import type { DeliveryHistoryService } from '../../application/delivery-history-service';
+import { registerSwagger } from './swagger';
 
 export interface AppDependencies {
-    authService: AuthService,
-    notificationService: NotificationService,
-    deliveryHistoryService: DeliveryHistoryService,
-    swaggerEnabled?: boolean,
-    logger?: boolean
+    authService: AuthService;
+    notificationService: NotificationService;
+    deliveryHistoryService: DeliveryHistoryService;
+    swaggerEnabled?: boolean;
+    logger?: boolean;
 }
 
 //deps as arguments so tests can build the app with testing configuration
@@ -45,9 +45,9 @@ export async function buildApp(deps: AppDependencies): Promise<FastifyInstance> 
     await app.register(async (protectedScope) => {
         protectedScope.addHook('onRequest', createAuthenticationHook(deps.authService));
         registerNotificationRoutes(
-            protectedScope, 
+            protectedScope,
             deps.notificationService,
-            deps.deliveryHistoryService
+            deps.deliveryHistoryService,
         );
     });
 

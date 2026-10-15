@@ -1,10 +1,10 @@
-import type { Notification } from "../../domain/notification";
-import type { DeliveryQueue } from "../../domain/ports";
-import type { PrismaClient } from "./client";
-import { Prisma } from "./generated/client";
+import type { Notification } from '../../domain/notification';
+import type { DeliveryQueue } from '../../domain/ports';
+import type { PrismaClient } from './client';
+import { Prisma } from './generated/client';
 
 export class PrismaDeliveryQueue implements DeliveryQueue {
-    constructor(private readonly prisma: PrismaClient){}
+    constructor(private readonly prisma: PrismaClient) {}
 
     async claimDue(now: Date, limit: number): Promise<Notification[]> {
         return this.prisma.$queryRaw<Notification[]>(Prisma.sql`
@@ -26,7 +26,7 @@ export class PrismaDeliveryQueue implements DeliveryQueue {
     async recoverStale(olderThan: Date): Promise<number> {
         const { count } = await this.prisma.notification.updateMany({
             where: { status: 'processing', lockedAt: { lt: olderThan } },
-            data: { status: 'pending', lockedAt: null }
+            data: { status: 'pending', lockedAt: null },
         });
         return count;
     }

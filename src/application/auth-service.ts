@@ -1,18 +1,18 @@
-import { UnauthorizedError, ValidationError } from "../domain/errors";
-import type { PasswordHasher, TokenService, UserRepository } from "../domain/ports";
-import { isValidEmail } from "../domain/email";
+import { UnauthorizedError, ValidationError } from '../domain/errors';
+import type { PasswordHasher, TokenService, UserRepository } from '../domain/ports';
+import { isValidEmail } from '../domain/email';
 
 export const MIN_PASSWORD_LENGTH = 8;
 
 export interface RegisteredUser {
-    id: string,
-    email: string
+    id: string;
+    email: string;
 }
 
 export interface LoginResult {
     accessToken: string;
-    tokenType: 'Bearer',
-    expiresIn: string
+    tokenType: 'Bearer';
+    expiresIn: string;
 }
 
 const INVALID_CREDENTIALS = 'Invalid email or password';
@@ -23,31 +23,33 @@ export class AuthService {
     constructor(
         private readonly users: UserRepository,
         private readonly hasher: PasswordHasher,
-        private readonly tokens: TokenService
+        private readonly tokens: TokenService,
     ) {}
 
     async register(email: string, password: string): Promise<RegisteredUser> {
         const normalized = normalizeEmail(email);
         if (!isValidEmail(normalized)) throw new ValidationError('Email format is invalid');
         if (password.length < MIN_PASSWORD_LENGTH) {
-            throw new ValidationError(`Password must have at least ${MIN_PASSWORD_LENGTH} characters`);
+            throw new ValidationError(
+                `Password must have at least ${MIN_PASSWORD_LENGTH} characters`,
+            );
         }
         const passwordHash = await this.hasher.hash(password);
-        const user = await this.users.create({ email: normalized, passwordHash});
+        const user = await this.users.create({ email: normalized, passwordHash });
         return { id: user.id, email: user.email };
     }
 
     async login(email: string, password: string): Promise<LoginResult> {
         const user = await this.users.findByEmail(normalizeEmail(email));
         if (!user) {
-            //dummy avoids revealing which accounts exists. 
+            //dummy avoids revealing which accounts exists.
             // A rapid response makes it easy to know
             this.dummyHash ??= this.hasher.hash('dummy-password-for-timig');
             await this.hasher.verify(await this.dummyHash, password);
             throw new UnauthorizedError(INVALID_CREDENTIALS);
         }
 
-        if (! (await this.hasher.verify(user.passwordHash, password))) {
+        if (!(await this.hasher.verify(user.passwordHash, password))) {
             throw new UnauthorizedError(INVALID_CREDENTIALS);
         }
 

@@ -1,4 +1,4 @@
-import type { DeliveryOutcome } from "./delivery-attempts";
+import type { DeliveryOutcome } from './delivery-attempts';
 
 export interface ChannelMessage {
     id: string;

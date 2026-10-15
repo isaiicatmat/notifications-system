@@ -36,8 +36,8 @@ const TRANSITIONS: Record<NotificationStatus, readonly NotificationStatus[]> = {
     pending: ['processing'],
     processing: ['sent', 'failed', 'pending'],
     sent: [],
-    failed: ['pending']
-}
+    failed: ['pending'],
+};
 
 export function canTransition(from: NotificationStatus, to: NotificationStatus): boolean {
     return TRANSITIONS[from].includes(to);

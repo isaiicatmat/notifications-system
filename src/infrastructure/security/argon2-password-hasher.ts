@@ -6,7 +6,7 @@ export class Argon2PasswordHasher implements PasswordHasher {
         return argon2.hash(plain, { type: argon2.argon2id });
     }
 
-    async verify(hash: string, plain:string): Promise<boolean> {
+    async verify(hash: string, plain: string): Promise<boolean> {
         try {
             return await argon2.verify(hash, plain);
         } catch {

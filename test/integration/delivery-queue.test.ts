@@ -1,6 +1,6 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { PrismaDeliveryQueue } from "../../src/infrastructure/prisma/prisma-delivery-queue";
-import { createTestContext, resetDatabase, seedNotifications, type TestContext } from "./helper";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { PrismaDeliveryQueue } from '../../src/infrastructure/prisma/prisma-delivery-queue';
+import { createTestContext, resetDatabase, seedNotifications, type TestContext } from './helper';
 
 let context: TestContext;
 let queue: PrismaDeliveryQueue;
@@ -12,9 +12,10 @@ beforeAll(async () => {
 afterAll(() => context?.close());
 beforeEach(() => resetDatabase(context.container));
 
-const findRow = (id: string) => context.container.prisma.notification.findUniqueOrThrow({
-    where: { id }
-});
+const findRow = (id: string) =>
+    context.container.prisma.notification.findUniqueOrThrow({
+        where: { id },
+    });
 
 describe('claimDue', () => {
     it('moves due pending notifications to processing and counts the attempt', async () => {
@@ -34,13 +35,18 @@ describe('claimDue', () => {
     });
 
     it('ignores notifications scheduled in the future', async () => {
-        await seedNotifications(context.container, 1, { nextAttemptAt: new Date(Date.now() + 60_000 )});
+        await seedNotifications(context.container, 1, {
+            nextAttemptAt: new Date(Date.now() + 60_000),
+        });
         expect(await queue.claimDue(new Date(), 10)).toEqual([]);
     });
 
     it('never gives the same notification to concurrent workers', async () => {
         const { ids } = await seedNotifications(context.container, 40);
-        const workers = Array.from({ length: 6 }, () => new PrismaDeliveryQueue(context.container.prisma));
+        const workers = Array.from(
+            { length: 6 },
+            () => new PrismaDeliveryQueue(context.container.prisma),
+        );
         const results = await Promise.all(workers.map((worker) => worker.claimDue(new Date(), 10)));
 
         const claimedIds = results.flat().map((n) => n.id);
@@ -56,18 +62,18 @@ describe('recoverStale', () => {
     it('re-queues notifications whose lock is older than the timeout', async () => {
         const { ids } = await seedNotifications(context.container, 2);
         const [staleId, freshId] = ids as [string, string];
-        
+
         await context.container.prisma.notification.update({
             where: { id: staleId },
-            data: { status: 'processing', lockedAt: new Date(Date.now() - 10 * 60_000) }
-        });
-        
-        await context.container.prisma.notification.update({
-            where: { id: freshId },
-            data: { status: 'processing', lockedAt: new Date() }
+            data: { status: 'processing', lockedAt: new Date(Date.now() - 10 * 60_000) },
         });
 
-        expect(await queue.recoverStale(new Date(Date.now() - 60_000 ))).toBe(1);
+        await context.container.prisma.notification.update({
+            where: { id: freshId },
+            data: { status: 'processing', lockedAt: new Date() },
+        });
+
+        expect(await queue.recoverStale(new Date(Date.now() - 60_000))).toBe(1);
         expect(await findRow(staleId)).toMatchObject({ status: 'pending', lockedAt: null });
         expect((await findRow(freshId)).status).toBe('processing');
     });

@@ -1,10 +1,12 @@
-import { ConflictError } from "../../domain/errors";
-import type { UserRepository } from "../../domain/ports";
-import type { User } from "../../domain/user";
-import type { PrismaClient } from "./client";
+import { ConflictError } from '../../domain/errors';
+import type { UserRepository } from '../../domain/ports';
+import type { User } from '../../domain/user';
+import type { PrismaClient } from './client';
 
 function isUniqueViolation(error: unknown): boolean {
-    return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
+    return (
+        typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002'
+    );
 }
 
 export class PrismaUserRepository implements UserRepository {
@@ -13,13 +15,13 @@ export class PrismaUserRepository implements UserRepository {
     async create(data: { email: string; passwordHash: string }): Promise<User> {
         try {
             return await this.prisma.user.create({ data });
-        } catch(error) {
+        } catch (error) {
             if (isUniqueViolation(error)) throw new ConflictError('Email is already registered');
             throw error;
         }
     }
 
     findByEmail(email: string): Promise<User | null> {
-        return this.prisma.user.findUnique({ where: { email }});
+        return this.prisma.user.findUnique({ where: { email } });
     }
 }

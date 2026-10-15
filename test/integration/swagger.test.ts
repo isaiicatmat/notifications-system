@@ -1,18 +1,18 @@
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
-import { createTestContext, type TestContext } from "./helper"
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { createTestContext, type TestContext } from './helper';
 
 type Operation = {
     security?: unknown[];
-    responses: Record<string, unknown>,
-    tags?: string[],
+    responses: Record<string, unknown>;
+    tags?: string[];
     summary?: string;
-}
+};
 
 type OpenApi = {
     openapi: string;
     paths: Record<string, Record<string, Operation>>;
-    components: { securitySchemes: Record<string, unknown>; schemas: Record<string, unknown> }
-}
+    components: { securitySchemes: Record<string, unknown>; schemas: Record<string, unknown> };
+};
 
 type Method = 'get' | 'post' | 'patch' | 'delete';
 
@@ -34,21 +34,21 @@ beforeAll(async () => {
     const res = await context.app.inject({ method: 'GET', url: '/docs/json' });
     expect(res.statusCode).toBe(200);
     doc = res.json();
-})
+});
 
 afterAll(() => context?.close());
 
 const PUBLIC = [
     ['post', '/auth/register'],
     ['post', '/auth/login'],
-    ['get', '/health']
+    ['get', '/health'],
 ] as const;
 const PROTECTED = [
     ['post', '/notifications'],
     ['get', '/notifications'],
     ['patch', '/notifications/{id}'],
     ['delete', '/notifications/{id}'],
-    ['get', '/notifications/{id}/deliveries']
+    ['get', '/notifications/{id}/deliveries'],
 ] as const;
 
 describe('OpenAPI document', () => {
@@ -57,7 +57,7 @@ describe('OpenAPI document', () => {
         expect(doc.components.securitySchemes.bearerAuth).toEqual({
             type: 'http',
             scheme: 'bearer',
-            bearerFormat: 'JWT'
+            bearerFormat: 'JWT',
         });
     });
 
@@ -82,15 +82,15 @@ describe('OpenAPI document', () => {
 
     it('documents error responses', () => {
         expect(responseCodes('post', '/auth/register')).toEqual(
-            expect.arrayContaining(['201', '400', '409'])
+            expect.arrayContaining(['201', '400', '409']),
         );
 
         expect(responseCodes('patch', '/notifications/{id}')).toEqual(
-            expect.arrayContaining(['200', '400', '401', '404', '409'])
+            expect.arrayContaining(['200', '400', '401', '404', '409']),
         );
     });
 
-    it('serves the Swagger UI without authentication', async() => {
+    it('serves the Swagger UI without authentication', async () => {
         const res = await context.app.inject({ method: 'GET', url: '/docs' });
         expect(res.statusCode).toBe(200);
         expect(res.headers['content-type']).toMatch(/html/);
@@ -101,8 +101,12 @@ describe('SWAGGER_ENABLE=false', () => {
     it('does not expose the documentation', async () => {
         const disabled = await createTestContext({ env: { SWAGGER_ENABLED: 'false' } });
         try {
-            expect((await disabled.app.inject({ method: 'GET', url: '/docs/json' })).statusCode).toBe(404);
-            expect((await disabled.app.inject({ method: 'GET', url: '/health' })).statusCode).toBe(200);
+            expect(
+                (await disabled.app.inject({ method: 'GET', url: '/docs/json' })).statusCode,
+            ).toBe(404);
+            expect((await disabled.app.inject({ method: 'GET', url: '/health' })).statusCode).toBe(
+                200,
+            );
         } finally {
             await disabled.close();
         }

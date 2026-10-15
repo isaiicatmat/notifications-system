@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
-import { createTestContext, registerAndLogin, resetDatabase, type TestContext } from "./helper";
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { createTestContext, registerAndLogin, resetDatabase, type TestContext } from './helper';
 
 type Auth = { authorization: string };
 
@@ -30,21 +30,21 @@ describe('POST /notifications', () => {
         expect(res.json()).toMatchObject({ ...valid, status: 'pending', attempts: 0 });
         expect(res.json()).not.toHaveProperty('userId');
         expect(res.json()).not.toHaveProperty('lockedAt');
-        
+
         const row = await context.container.prisma.notification.findFirstOrThrow();
         expect(row.userId).toBe(carlos.userId);
     });
 
     it('responds 400 for an unsupported channel, listing supported ones', async () => {
-        const res =await create(carlos.headers, { ...valid, channel: 'fax' });
+        const res = await create(carlos.headers, { ...valid, channel: 'fax' });
         expect(res.statusCode).toBe(400);
         expect(res.json().message).toMatch(/email, sms, push/);
         expect(await context.container.prisma.notification.count()).toBe(0);
     });
 
     it('responds 400 for missing or empty fields', async () => {
-        expect(( await create(carlos.headers, { title: 'x' })).statusCode).toBe(400);
-        expect(( await create(carlos.headers, { ...valid, title: '' })).statusCode).toBe(400);
+        expect((await create(carlos.headers, { title: 'x' })).statusCode).toBe(400);
+        expect((await create(carlos.headers, { ...valid, title: '' })).statusCode).toBe(400);
         expect(await context.container.prisma.notification.count()).toBe(0);
     });
 
@@ -55,8 +55,12 @@ describe('POST /notifications', () => {
         expect(row.userId).toBe(carlos.userId);
     });
 
-    it('responds 401 without a token', async() => {
-        const res = await context.app.inject({ method: 'POST', url: '/notifications', payload: valid });
+    it('responds 401 without a token', async () => {
+        const res = await context.app.inject({
+            method: 'POST',
+            url: '/notifications',
+            payload: valid,
+        });
         expect(res.statusCode).toBe(401);
     });
 });
@@ -66,9 +70,16 @@ describe('GET /notifications', () => {
         await create(carlos.headers, { ...valid, title: 'first' });
         await create(carlos.headers, { ...valid, title: 'second' });
         await create(alberto.headers, { ...valid, title: 'albertos' });
-        const res = await context.app.inject({ method: 'GET', url: '/notifications', headers: carlos.headers });
+        const res = await context.app.inject({
+            method: 'GET',
+            url: '/notifications',
+            headers: carlos.headers,
+        });
         expect(res.statusCode).toBe(200);
-        expect(res.json().map((notification: { title: string }) => notification.title )).toEqual(['second', 'first']);
+        expect(res.json().map((notification: { title: string }) => notification.title)).toEqual([
+            'second',
+            'first',
+        ]);
     });
 });
 
@@ -80,14 +91,19 @@ describe('PATCH /notifications/:id', () => {
         const { id } = (await create(carlos.headers)).json();
         const res = await patch(id, carlos.headers, { title: 'Changed', channel: 'sms' });
         expect(res.statusCode).toBe(200);
-        expect(res.json()).toMatchObject({ id, title: 'Changed', channel: 'sms', status: 'pending' });
+        expect(res.json()).toMatchObject({
+            id,
+            title: 'Changed',
+            channel: 'sms',
+            status: 'pending',
+        });
     });
 
     it('re-queues a failed notification', async () => {
         const { id } = (await create(carlos.headers)).json();
         await context.container.prisma.notification.update({
             where: { id },
-            data: { status: 'failed', attempts: 5 }
+            data: { status: 'failed', attempts: 5 },
         });
         const res = await patch(id, carlos.headers, { content: 'fixed' });
         expect(res.statusCode).toBe(200);
@@ -101,45 +117,56 @@ describe('PATCH /notifications/:id', () => {
             await context.container.prisma.notification.update({ where: { id }, data: { status } });
             const res = await patch(id, carlos.headers, { title: 'Changed' });
             expect(res.statusCode).toBe(409);
-            const row = await context.container.prisma.notification.findUniqueOrThrow({ where: { id } });
+            const row = await context.container.prisma.notification.findUniqueOrThrow({
+                where: { id },
+            });
             expect(row).toMatchObject({ title: 'Hello', status });
-        }
+        },
     );
 
     it("responds 404 for another user's or an unknown notification", async () => {
         const { id } = (await create(carlos.headers)).json();
         expect((await patch(id, alberto.headers, { title: 'hijack' })).statusCode).toBe(404);
         expect((await patch(UNKNOWN_ID, carlos.headers, { title: 'x' })).statusCode).toBe(404);
-        
-        const row = await context.container.prisma.notification.findUniqueOrThrow({ where: { id } });
+
+        const row = await context.container.prisma.notification.findUniqueOrThrow({
+            where: { id },
+        });
         expect(row.title).toBe('Hello');
     });
 
     it('responds 400 for an empty body, invalid channel or invalid id', async () => {
         const { id } = (await create(carlos.headers)).json();
-        expect(( await patch(id, carlos.headers, {})).statusCode).toBe(400);
-        expect(( await patch(id, carlos.headers, { channel: 'fax' })).statusCode).toBe(400);
-        expect(( await patch('not-a-uuid', carlos.headers, { title: 'x' })).statusCode).toBe(400);
+        expect((await patch(id, carlos.headers, {})).statusCode).toBe(400);
+        expect((await patch(id, carlos.headers, { channel: 'fax' })).statusCode).toBe(400);
+        expect((await patch('not-a-uuid', carlos.headers, { title: 'x' })).statusCode).toBe(400);
     });
 });
 
 describe('DELETE /notifications/:id', () => {
-    const del = (id: string, headers: Auth) => 
+    const del = (id: string, headers: Auth) =>
         context.app.inject({ method: 'DELETE', url: `/notifications/${id}`, headers });
 
     it('deletes my notification in any status', async () => {
         const { id } = (await create(carlos.headers)).json();
-        await context.container.prisma.notification.update({ where: { id }, data: { status: 'sent' } });
-        expect(( await del(id, carlos.headers)).statusCode).toBe(204);
-        
-        const list = await context.app.inject({ method: 'GET', url: '/notifications', headers: carlos.headers });
+        await context.container.prisma.notification.update({
+            where: { id },
+            data: { status: 'sent' },
+        });
+        expect((await del(id, carlos.headers)).statusCode).toBe(204);
+
+        const list = await context.app.inject({
+            method: 'GET',
+            url: '/notifications',
+            headers: carlos.headers,
+        });
         expect(list.json()).toEqual([]);
     });
 
     it("responds 404 and keeps another user's notification", async () => {
-        const { id } = (( await create(carlos.headers))).json();
-        expect(( await del(id, alberto.headers)).statusCode).toBe(404);
-        expect(( await del(UNKNOWN_ID, carlos.headers)).statusCode).toBe(404);
+        const { id } = (await create(carlos.headers)).json();
+        expect((await del(id, alberto.headers)).statusCode).toBe(404);
+        expect((await del(UNKNOWN_ID, carlos.headers)).statusCode).toBe(404);
         expect(await context.container.prisma.notification.count()).toBe(1);
     });
 });

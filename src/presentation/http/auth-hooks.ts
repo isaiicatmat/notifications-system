@@ -1,6 +1,6 @@
-import type { FastifyReply, FastifyRequest } from "fastify";
-import type { AuthService } from "../../application/auth-service";
-import { UnauthorizedError } from "../../domain/errors";
+import type { FastifyReply, FastifyRequest } from 'fastify';
+import type { AuthService } from '../../application/auth-service';
+import { UnauthorizedError } from '../../domain/errors';
 
 //Extends FastifyRequest type so request.userId is types in all routes
 declare module 'fastify' {
@@ -23,5 +23,5 @@ export function createAuthenticationHook(auth: AuthService) {
         if (!token) throw new UnauthorizedError('Missing bearer token');
         const { userId } = await auth.authenticate(token);
         request.userId = userId;
-    }
+    };
 }

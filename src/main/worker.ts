@@ -8,7 +8,7 @@ async function main(): Promise<void> {
     const container = createContainer(config);
     const logger = {
         info: (message: string) => console.log(`[worker] ${message}`),
-        error: (error: unknown, message: string) => console.error(`[wprker] ${message}`, error)
+        error: (error: unknown, message: string) => console.error(`[wprker] ${message}`, error),
     };
     const worker = container.createWorker(logger);
 
@@ -19,11 +19,13 @@ async function main(): Promise<void> {
     });
 
     worker.start();
-    logger.info(`started (poll ${config.worker.pollIntervalMs}ms, batch ${config.worker.batchSize}, ` +
-      `max attempts ${config.worker.maxAttempts})`,);
+    logger.info(
+        `started (poll ${config.worker.pollIntervalMs}ms, batch ${config.worker.batchSize}, ` +
+            `max attempts ${config.worker.maxAttempts})`,
+    );
 }
 
 main().catch((error) => {
     console.error(error);
     process.exit(1);
-})
+});

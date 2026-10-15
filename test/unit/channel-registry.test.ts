@@ -1,14 +1,13 @@
-import { describe, expect, it } from "vitest";
-import { ChannelRegistry } from "../../src/application/channel-registry";
-import type { Channel } from "../../src/domain/channel";
+import { describe, expect, it } from 'vitest';
+import { ChannelRegistry } from '../../src/application/channel-registry';
+import type { Channel } from '../../src/domain/channel';
 
 const fake = (name: string): Channel => ({
     name,
-    send: async() => ({ outcome: 'sent', details: {} }),
+    send: async () => ({ outcome: 'sent', details: {} }),
 });
 
 describe('ChannelRegistry', () => {
-
     it('registers and looks up channels by name', () => {
         const email = fake('email');
         const registry = new ChannelRegistry().register(email).register(fake('sms'));
@@ -27,5 +26,4 @@ describe('ChannelRegistry', () => {
         const registry = new ChannelRegistry().register(fake('email'));
         expect(() => registry.register(fake('email'))).toThrow(/already registered/);
     });
-
 });
