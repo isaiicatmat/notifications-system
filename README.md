@@ -20,8 +20,8 @@ REST API where authenticated users manage their notifications and deliver them *
 - Interactive API documentation with Swagger
 
 ## Badges
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/isaiicatmat/notifications-system/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/isaiicatmat/notifications-system/tree/main)
 
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/isaiicatmat/notifications-system/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/isaiicatmat/notifications-system/tree/main)
 
 ## Techs
 
