@@ -115,16 +115,7 @@ Lifecycle: `pending → processing → sent | failed`. A transient failure goes 
 
 ## Technical decisions
 
-**Clean architecture.** Dependencies point inward:
-
-```
-src/
-  domain/          entities, status rules, errors and ports (interfaces). No Fastify or Prisma
-  application/     services (use cases): Auth, Notification, Delivery, DeliveryHistory, ChannelRegistry
-  infrastructure/  adapters: Prisma repositories, argon2, JWT, channels, worker
-  presentation/    HTTP: routes, DTOs (TypeBox), authentication hook, error handling, Swagger
-  main/            composition root (manual dependency injection) and the server.ts / worker.ts entrypoints
-```
+**Clean architecture / ports and adapters (hexagonal).** The core (`domain/` + `application/`) depends only on ports (interfaces in `domain/ports.ts` and `Channel`). Driven adapters in `infrastructure/` implement them (Prisma, argon2, JWT, channels); driving adapters call the core (HTTP routes in `presentation/` and the delivery worker). `src/main/container.ts` wires each port to its adapter. Driving ports are kept implicit: adapters call the service classes directly, a deliberate simplification for this size.
 
 The flow is `controller → service → repository → ORM → DB`, with the dependency inverted: services depend on domain interfaces (`NotificationRepository`, `DeliveryQueue`, `Channel`, `Clock`), and the implementations are wired in a single place: `src/main/container.ts`.
 This makes services testable with in-memory fakes and lets the ORM or the queue change without touching business logic.
