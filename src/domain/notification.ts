@@ -16,6 +16,14 @@ export interface Notification {
     updatedAt: Date;
 }
 
+/**
+ * A notification held by one worker. Every claim gets a fresh token, so a worker
+ * whose lock expired (and whose row was re-claimed by someone else) can no longer finish it.
+ */
+export interface ClaimedNotification extends Notification {
+    claimToken: string;
+}
+
 export interface NewNotification {
     userId: string;
     title: string;

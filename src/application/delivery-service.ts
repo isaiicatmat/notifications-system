@@ -1,5 +1,5 @@
 import type { DeliveryResult } from '../domain/channel';
-import type { Notification } from '../domain/notification';
+import type { ClaimedNotification, Notification } from '../domain/notification';
 import type { Clock, DeliveryAttemptRepository, DeliveryQueue } from '../domain/ports';
 import { backoffDelayMs } from './backoff';
 import type { ChannelRegistry } from './channel-registry';
@@ -41,7 +41,7 @@ export class DeliveryService {
         return claimed.length;
     }
 
-    private async deliver(notification: Notification): Promise<void> {
+    private async deliver(notification: ClaimedNotification): Promise<void> {
         const result = await this.send(notification);
         const exhausted =
             result.outcome === 'retryable' && notification.attempts >= this.options.maxAttempts;
@@ -58,14 +58,18 @@ export class DeliveryService {
             attemptedAt: this.clock.now(),
         });
 
+        // If our claim expired and another worker took the row, these calls return false
+        // and leave the row to the current owner.
+        const { id, claimToken } = notification;
         if (result.outcome === 'sent') {
-            await this.queue.markSent(notification.id);
+            await this.queue.markSent(id, claimToken);
         } else if (result.outcome === 'permanent' || exhausted) {
-            await this.queue.markFailed(notification.id);
+            await this.queue.markFailed(id, claimToken);
         } else {
             const delay = backoffDelayMs(notification.attempts, this.options.backoffBaseMs);
             await this.queue.scheduleRetry(
-                notification.id,
+                id,
+                claimToken,
                 new Date(this.clock.now().getTime() + delay),
             );
         }

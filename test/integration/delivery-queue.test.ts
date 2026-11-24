@@ -23,6 +23,7 @@ describe('claimDue', () => {
         const claimed = await queue.claimDue(new Date(), 10);
         expect(claimed.map((n) => n.id).sort()).toEqual([...ids].sort());
         expect(claimed.every((n) => n.status === 'processing' && n.attempts === 1)).toBe(true);
+        expect(new Set(claimed.map((n) => n.claimToken)).size).toBe(claimed.length);
         expect(claimed[0]?.lockedAt).toBeInstanceOf(Date);
         expect(await queue.claimDue(new Date(), 10)).toEqual([]);
     });
@@ -74,7 +75,11 @@ describe('recoverStale', () => {
         });
 
         expect(await queue.recoverStale(new Date(Date.now() - 60_000), 5)).toBe(1);
-        expect(await findRow(staleId)).toMatchObject({ status: 'pending', lockedAt: null });
+        expect(await findRow(staleId)).toMatchObject({
+            status: 'pending',
+            lockedAt: null,
+            claimToken: null,
+        });
         expect((await findRow(freshId)).status).toBe('processing');
     });
 
@@ -89,37 +94,70 @@ describe('recoverStale', () => {
                 lockedAt: new Date(Date.now() - 10 * 60_000),
             },
         });
-        await queue.recoverStale(new Date(Date.now() - 60_000), 5);
+        // Exhausted rows are failed, not counted as re-queued.
+        expect(await queue.recoverStale(new Date(Date.now() - 60_000), 5)).toBe(0);
         expect((await findRow(id)).status).toBe('failed');
     });
 });
 
 describe('finishing a claimed notification', () => {
+    const tokenOf = (claimed: { id: string; claimToken: string }[], id: string) => {
+        const token = claimed.find((n) => n.id === id)?.claimToken;
+        if (!token) throw new Error(`notification ${id} was not claimed`);
+        return token;
+    };
+
     it('marks sent, failed or schedule a retry only from processing', async () => {
         const { ids } = await seedNotifications(context.container, 3);
         const [sentId, failedId, retryId] = ids as [string, string, string];
-        await queue.claimDue(new Date(), 10);
+        const claimed = await queue.claimDue(new Date(), 10);
         const retryAt = new Date(Date.now() + 30_000);
 
-        expect(await queue.markSent(sentId)).toBe(true);
-        expect(await queue.markFailed(failedId)).toBe(true);
-        expect(await queue.scheduleRetry(retryId, retryAt)).toBe(true);
+        expect(await queue.markSent(sentId, tokenOf(claimed, sentId))).toBe(true);
+        expect(await queue.markFailed(failedId, tokenOf(claimed, failedId))).toBe(true);
+        expect(await queue.scheduleRetry(retryId, tokenOf(claimed, retryId), retryAt)).toBe(true);
 
-        expect((await findRow(sentId)).status).toBe('sent');
+        expect(await findRow(sentId)).toMatchObject({ status: 'sent', claimToken: null });
         expect((await findRow(failedId)).status).toBe('failed');
         const retried = await findRow(retryId);
         expect(retried.status).toBe('pending');
         expect(retried.nextAttemptAt.getTime()).toBe(retryAt.getTime());
 
         // Already finished: further updates are ignored.
-        expect(await queue.markFailed(sentId)).toBe(false);
+        expect(await queue.markFailed(sentId, tokenOf(claimed, sentId))).toBe(false);
     });
 
     it('returns false when the notification was deleted meanwhile', async () => {
         const { ids } = await seedNotifications(context.container, 1);
         const [id] = ids as [string];
-        await queue.claimDue(new Date(), 10);
+        const claimed = await queue.claimDue(new Date(), 10);
         await context.container.prisma.notification.delete({ where: { id } });
-        expect(await queue.markSent(id)).toBe(false);
+        expect(await queue.markSent(id, tokenOf(claimed, id))).toBe(false);
+    });
+
+    it('ignores a slow worker whose claim expired and was taken by another worker', async () => {
+        const { ids } = await seedNotifications(context.container, 1);
+        const [id] = ids as [string];
+
+        // Worker A claims the row, then stalls past the lock timeout.
+        const [slow] = await queue.claimDue(new Date(), 10);
+        await context.container.prisma.notification.update({
+            where: { id },
+            data: { lockedAt: new Date(Date.now() - 10 * 60_000) },
+        });
+        await queue.recoverStale(new Date(Date.now() - 60_000), 5);
+
+        // Worker B re-claims it.
+        const [current] = await queue.claimDue(new Date(), 10);
+        expect(current?.id).toBe(id);
+        expect(current?.claimToken).not.toBe(slow?.claimToken);
+
+        // Worker A wakes up: its stale token must not close B's claim.
+        expect(await queue.markSent(id, slow!.claimToken)).toBe(false);
+        expect(await queue.scheduleRetry(id, slow!.claimToken, new Date())).toBe(false);
+        expect(await findRow(id)).toMatchObject({ status: 'processing', attempts: 2 });
+
+        expect(await queue.markSent(id, current!.claimToken)).toBe(true);
+        expect((await findRow(id)).status).toBe('sent');
     });
 });

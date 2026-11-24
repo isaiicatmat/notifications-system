@@ -2,6 +2,14 @@
 
 REST API where authenticated users manage their notifications and deliver them **asynchronously** through different channels (**email**, **sms**, **push**). Adding a new channel does not require changing existing logic.
 
+**Highlights**
+
+- **PostgreSQL as the job queue, no broker:** workers claim batches with `FOR UPDATE SKIP LOCKED`; tested with 6 concurrent workers (no duplicates, nothing lost).
+- **Fencing tokens:** every claim gets a fresh token, so a worker whose lock expired cannot overwrite the result of the worker that took over.
+- **Retries with exponential backoff**, a max-attempts cap and recovery of work left behind by crashed workers.
+- **At-least-once delivery**, with the trade-offs written down (see [Delivery guarantees](#delivery-guarantees)).
+- **Ports and adapters:** the core is tested with in-memory fakes; the queue is tested against a real PostgreSQL.
+
 ## Features
 
 - User registration with email and password
@@ -35,7 +43,7 @@ REST API where authenticated users manage their notifications and deliver them *
 - Vitest 5.0.3
 - Docker and Docker Compose
 
-## Route
+## Docs
 
 - Swagger UI: [API Swagger](http://localhost:3000/docs)
 - OpenAPI document: http://localhost:3000/docs/json
@@ -131,7 +139,34 @@ Each channel implements `Channel { name; send(message) }` and returns a typed re
 
 **Asynchronous delivery on PostgreSQL, no broker.**
 
-The `notifications` table is the queue (`status`, `attempts`, `next_attempt_at`, `locked_at`): creating a notification and enqueuing it is a single atomic INSERT. The worker claims batches with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)`, so concurrent workers never take the same notification (there is a test with 6 parallel workers).
+The `notifications` table is the queue (`status`, `attempts`, `next_attempt_at`, `locked_at`, `claim_token`): creating a notification and enqueuing it is a single atomic INSERT. The worker claims batches with `UPDATE ... WHERE id IN (SELECT ... FOR UPDATE SKIP LOCKED)`, so concurrent workers never take the same notification (there is a test with 6 parallel workers).
+
+**Fencing tokens for expired locks.**
+
+`SKIP LOCKED` only protects the claim. A worker can still stall (GC pause, slow provider) past `WORKER_LOCK_TIMEOUT_MS`; the row is then recovered and claimed by another worker. Without a check, the slow worker would wake up and overwrite the new owner's result.
+
+To prevent that, every claim sets a new random `claim_token`, and finishing a row (`sent`, `failed` or retry) requires the same token:
+
+```sql
+UPDATE notifications SET status = 'sent', claim_token = NULL, ...
+WHERE id = $1 AND status = 'processing' AND claim_token = $2
+```
+
+A stale worker's update matches zero rows and is ignored. Recovering stale rows is one statement (re-queue or fail, depending on the attempts left) and clears the token. `test/integration/delivery-queue.test.ts` reproduces the scenario: worker A claims, stalls, the row is recovered and claimed by B, and A's late update is rejected.
+
+```mermaid
+sequenceDiagram
+    participant A as Worker A
+    participant DB as notifications
+    participant B as Worker B
+    A->>DB: claim (token t1)
+    Note over A: stalls past the lock timeout
+    B->>DB: recoverStale + claim (token t2)
+    A->>DB: markSent(id, t1)
+    DB-->>A: 0 rows (claim no longer current)
+    B->>DB: markSent(id, t2)
+    DB-->>B: 1 row, status = sent
+```
 
 **Authentication and authorization.**
 
@@ -156,26 +191,28 @@ Each route's TypeBox schemas validate the input, filter the output (internal fie
 
 `Clock` is a port: backoff and recovery tests advance a fake clock instead of waiting. The application sets `next_attempt_at` with the same clock the worker uses, which avoids skew between the server clock and the database clock.
 
-**Delivery guarantees.**
+### Delivery guarantees
 
-Delivery is **at-least-once**: if a worker dies after a provider accepted
-a message but before the row is marked `sent`, the notification is re-queued after the lock timeout
-and sent again. Exactly-once is not achievable across a database and an external provider without
+Delivery is **at-least-once**: if a worker dies (or stalls past the lock timeout) after a provider accepted
+a message but before the row is marked `sent`, the notification is re-queued and sent again.
+Fencing tokens keep the row's **state** consistent, but they cannot un-send a message the provider already accepted. Exactly-once is not achievable across a database and an external provider without
 the provider's help, so real channels should pass an idempotency key (the notification id) so
 duplicates are discarded on the provider side. Notifications that keep crashing workers are marked
 `failed` after `WORKER_MAX_ATTEMPTS` instead of being retried forever.
 
-**Observability (not implemented).**
+**Observability (partial).**
 
-Next steps would be structured logs with a correlation id per
-request and per delivery, and metrics for queue depth, delivery latency and failures per channel.
+The API and the worker log structured JSON with pino, and failed deliveries are logged with the notification id.
+Next steps would be a correlation id per request and per delivery, and metrics for queue depth,
+delivery latency and failures per channel.
 
 ## Areas to improve
 
 - Channel rules (for example the SMS 160-character limit) are validated at **delivery** time, not at creation: the API answers 201 and the notification becomes `failed` later. Each channel could expose a `validate()` method used at creation too, to answer 400 immediately.
-- Providers are simulated, as the requirements ask. Real integrations would fit behind the same `Channel` interface.
+- Providers are simulated. Real integrations would fit behind the same `Channel` interface.
 - Polling adds up to `WORKER_POLL_INTERVAL_MS` of latency; PostgreSQL `LISTEN/NOTIFY` could reduce it.
 - No refresh tokens, JWT revocation or rate limiting yet.
+- `DeliveryWorker.stop()` waits for the batch in progress with no timeout; a slow provider can delay shutdown.
 - A seed script would provide a working app with sample data out of the box.
 - The runtime Docker image is about 800 MB because Prisma 7 pulls in heavy peer dependencies; it could be optimized.
 - Phone numbers are only validated for E.164 format; a library such as `libphonenumber-js` could validate them per country.

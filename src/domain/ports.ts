@@ -1,5 +1,10 @@
 import type { DeliveryAttempt, NewDeliveryAttempt } from './delivery-attempts';
-import type { NewNotification, Notification, NotificationPatch } from './notification';
+import type {
+    ClaimedNotification,
+    NewNotification,
+    Notification,
+    NotificationPatch,
+} from './notification';
 import type { User } from './user';
 
 export interface Clock {
@@ -43,12 +48,16 @@ export interface NotificationRepository {
     deleteOwned(id: string, userId: string): Promise<boolean>;
 }
 
+/**
+ * Finishing methods take the claim token returned by `claimDue` and return false when
+ * that claim is no longer current (row deleted, recovered as stale, or re-claimed).
+ */
 export interface DeliveryQueue {
-    claimDue(now: Date, limit: number): Promise<Notification[]>;
+    claimDue(now: Date, limit: number): Promise<ClaimedNotification[]>;
     recoverStale(olderThan: Date, maxAttempts: number): Promise<number>;
-    markSent(id: string): Promise<boolean>;
-    markFailed(id: string): Promise<boolean>;
-    scheduleRetry(id: string, nextAttemptAt: Date): Promise<boolean>;
+    markSent(id: string, claimToken: string): Promise<boolean>;
+    markFailed(id: string, claimToken: string): Promise<boolean>;
+    scheduleRetry(id: string, claimToken: string, nextAttemptAt: Date): Promise<boolean>;
 }
 
 export interface DeliveryAttemptRepository {

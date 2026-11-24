@@ -18,7 +18,8 @@ export class DeliveryWorker {
     ) {}
 
     start(): void {
-        if (this.running) return;
+        // `loop` is still set while a stop() is draining: starting then would run two loops.
+        if (this.running || this.loop) return;
         this.running = true;
         this.loop = this.run();
     }
@@ -29,13 +30,16 @@ export class DeliveryWorker {
             this.wake();
         }
         await this.loop;
+        this.loop = undefined;
     }
 
     private async run(): Promise<void> {
         while (this.running) {
             let claimed = 0;
             try {
-                claimed = await this.delivery.runOnce();
+                claimed = await this.delivery.runOnce((error, notificationId) =>
+                    this.logger.error(error, `Delivery of notification ${notificationId} failed`),
+                );
             } catch (error) {
                 this.logger.error(error, 'Delivery iteration failed');
             }
