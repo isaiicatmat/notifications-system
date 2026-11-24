@@ -40,6 +40,8 @@ model Notification {
   attempts      Int                @default(0)
   nextAttemptAt DateTime           @default(now()) @map("next_attempt_at") @db.Timestamptz(3)
   lockedAt      DateTime?          @map("locked_at") @db.Timestamptz(3)
+  // Fencing token: set on every claim, required to finish. Null when not processing.
+  claimToken    String?            @map("claim_token") @db.Uuid
   createdAt     DateTime           @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt     DateTime           @updatedAt @map("updated_at") @db.Timestamptz(3)
 
